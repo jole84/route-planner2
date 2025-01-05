@@ -27,7 +27,7 @@
   <div class="buttonGroup" id="lowerLeftGroup">
     <button id="openMenuButton" class="btn btn-success">meny</button>
     <button id="openhelpButton" class="btn btn-info">hjälp</button>
-    <button class="btn btn-primary">lower Left Button</button>
+    <button id="lowerLeftButton" class="btn btn-primary">lower Left Button</button>
     <select id="layerSelector" class="form-select">
       <option value="0">Jole84 Terrängkarta</option>
       <option value="1">Jole84 Vägkarta</option>
@@ -45,19 +45,35 @@
 
   <!-- menuContainer -->
   <div id="menuContainer">
-
     <!-- menuDiv -->
     <div id="menuDiv" class="textBox">
       <div id="menuDivContent"></div>
+      <button id="menuDivCloseButton" class="btn btn-danger alignRight">stäng</button>
+    </div>
+  </div>
+
+  <!-- menu contents -->
+  <div class="invicible">
+    <!-- menuItems -->
+    <div id="menuItems">
       <div>
         <input id="someCheckbox" class="form-check-input" type="checkbox" />
         <label for="someCheckbox">some checkbox</label>
       </div>
-      <button id="menuDivCloseButton" class="btn btn-danger alignRight">stäng</button>
+
+      <div>
+        <input class="form-check-input" type="checkbox" />
+        <label for="someCheckbox">some checkbox</label>
+      </div>
+
+      <div>
+        <input class="form-check-input" type="checkbox" />
+        <label for="someCheckbox">some checkbox</label>
+      </div>
     </div>
 
     <!-- helpDiv -->
-    <div id="helpDiv" class="textBox">
+    <div id="helpDiv">
       <div><kbd>Högerklick</kbd> lägg till/ta bort waypoint</div>
       <div><kbd>Vänsterklick</kbd> växla waypoint till offroad</div>
       <div><kbd>Alt + vänsterklick</kbd> lägg till POI</div>
@@ -66,21 +82,19 @@
       <div><kbd>Backspace</kbd> ta bort sista waypoint</div>
       <div><kbd>Shift + mus</kbd> frihandsmarkering</div>
       <div><kbd>r</kbd> radera senaste markering</div>
-      <button id="helpDivCloseButton" class="btn btn-danger alignRight">stäng</button>
     </div>
 
     <!-- gpxFileNameInput -->
-    <div id="gpxFileNameInput" class="textBox">
+    <div id="gpxFileNameInput">
       Ange filnamn:
       <input class="form-control" id="gpxFileName" type="text" />
       <div class="alignRight">
         <button id="saveFileOkButton" class="btn btn-success">ok</button>
-        <button id="saveFileCloseButton" class="btn btn-danger">avbryt</button>
       </div>
     </div>
 
     <!-- savePOINameInput -->
-    <div id="savePoiNameInput" class="textBox">
+    <div id="savePoiNameInput">
       Ange POI namn:
       <input class="form-control" id="poiFileName" type="text" />
       <div class="alignRight">
@@ -88,7 +102,6 @@
         <button id="savePoiCloseButton" class="btn btn-danger">avbryt</button>
       </div>
     </div>
-
   </div>
 </body>
 

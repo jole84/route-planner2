@@ -53,16 +53,10 @@ html, body {
   align-items: center;
 }
 
-#gpxFileNameInput {
-  display: none;
-}
-
-#helpDiv {
-  display: none;
-}
-
-#savePoiNameInput {
-  display: none;
+#menuDivContent {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .textBox:has(#menuDivContent:empty) {
@@ -75,6 +69,10 @@ html, body {
 
 .form-check-input[type=checkbox] {
   margin-right: 0px;
+}
+
+.invisible {
+  display: none;
 }
 
 .form-select {

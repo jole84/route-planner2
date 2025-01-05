@@ -19,30 +19,30 @@ import TileWMS from "ol/source/TileWMS.js";
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
 
-const menuDiv2content = document.getElementById("menuDivContent");
-const menuDiv = document.getElementById("menuDiv");
+const menuDivcontent = document.getElementById("menuDivContent");
+const menuItems = document.getElementById("menuItems");
+const helpDiv = document.getElementById("helpDiv");
+const gpxFileNameInput = document.getElementById("gpxFileNameInput");
 
 localStorage.centerCoordinate = localStorage.centerCoordinate || JSON.stringify(defaultCenter);
 localStorage.centerZoom = localStorage.centerZoom || defaultZoom;
 localStorage.routePlannerMapMode = localStorage.routePlannerMapMode || 0; // default map
 
 document.getElementById("openMenuButton").addEventListener("click", () => {
-  menuDiv2content.innerHTML = new Date().toLocaleString();
-  menuDiv.style.display = "flex";
+  menuDivcontent.innerHTML = menuItems.innerHTML;
+  document.getElementById("someCheckbox").checked = true;
 });
 document.getElementById("menuDivCloseButton").addEventListener("click", () => {
-  menuDiv.style.display = "none";
+  menuDivcontent.innerHTML = "";
 });
 
 document.getElementById("openhelpButton").addEventListener("click", () => {
-  document.getElementById("helpDiv").style.display = "flex";
-});
-document.getElementById("helpDivCloseButton").addEventListener("click", () => {
-  document.getElementById("helpDiv").style.display = "none";
+  menuDivcontent.innerHTML = helpDiv.innerHTML;
 });
 
-document.getElementById("savePoiCloseButton").addEventListener("click", () => {
-  document.getElementById("savePoiNameInput").style.display = "none";
+// temp
+document.getElementById("lowerLeftButton").addEventListener("click", () => {
+  menuDivcontent.innerHTML = gpxFileNameInput.innerHTML;
 });
 
 const slitlagerkarta = new TileLayer({
