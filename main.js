@@ -94,7 +94,7 @@ const osm = new TileLayer({
   visible: false,
 });
 
-// added layers:
+// vector layers:
 const routeLineString = new LineString([]);
 const routeLineLayer = new VectorLayer({
   source: new VectorSource({
@@ -103,13 +103,63 @@ const routeLineLayer = new VectorLayer({
       geometry: routeLineString,
     })],
   }),
+  style: function (feature) {
+    return new Style({
+      stroke: new Stroke({
+        width: 10,
+        color: [255, 0, 255, 0.4],
+      }),
+    })
+  }
 });
+
+const routePointStyle = {
+  startPoint: new Style({
+    image: new Icon({
+      anchor: [0.5, 1],
+      opacity: 0.85,
+      src: "https://jole84.se/start-marker.svg",
+    }),
+  }),
+  midPoint: new Style({
+    image: new Icon({
+      anchor: [0.5, 1],
+      opacity: 0.85,
+      src: "https://jole84.se/marker.svg",
+    }),
+  }),
+  endPoint: new Style({
+    image: new Icon({
+      anchor: [0.5, 1],
+      opacity: 0.85,
+      src: "https://jole84.se/end-marker.svg",
+    }),
+  }),
+}
+
+function getPointType(i, y) {
+  if (i == 0) {
+    return "startPoint";
+  } else if (i == y - 1) {
+    return "endPoint";
+  } else {
+    return "midPoint";
+  }
+}
 
 const routePointsLayer = new VectorLayer({
   source: new VectorSource(),
+  style:  function (feature) {
+    return routePointStyle[feature.get("pointType")];
+  },
 });
 const modifyroutePoints = new Modify({ source: routePointsLayer.getSource() });
 modifyroutePoints.addEventListener("modifyend", function () {
+  const routePoints = routePointsLayer.getSource().getFeatures();
+  routePointsLineString.setCoordinates([]);
+  for (let i = 0; i < routePoints.length; i++) {
+    routePointsLineString.appendCoordinate(routePoints[i].getGeometry().getCoordinates());
+  };
   routeMe();
 });
 
@@ -121,26 +171,32 @@ const routePointsLineStringLayer = new VectorLayer({
       geometry: routePointsLineString,
     })],
   }),
+  style: function (feature) {
+    return new Style({
+      stroke: new Stroke({
+        color: [255, 0, 0, 0.6],
+        lineDash: [20],
+        width: 6,
+      }),
+    })
+  }
 });
 
 routePointsLineString.addEventListener("change", function () {
   const routePoints = routePointsLineString.getCoordinates();
   routePointsLayer.getSource().clear();
-  routePoints.forEach(function (segment) {
+  for (var i = 0; i < routePoints.length; i++) {
     const routePointMarker = new Feature({
-      geometry: new Point(segment),
+      geometry: new Point(routePoints[i]),
+      pointType: getPointType(i, routePoints.length),
     });
     routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
     routePointsLayer.getSource().addFeature(routePointMarker);
-  });
+  };
 });
 
-const modifyroutePointsLineString = new Modify({ source: routePointsLineStringLayer.getSource() });
-
-// modifyroutePointsLineString.addEventListener("modifystart", function () {
-//   console.log("routePointsLineString modifystart");
-// });
-modifyroutePointsLineString.addEventListener("modifyend", function () {
+const modifyRoutePointsLineString = new Modify({ source: routePointsLineStringLayer.getSource() });
+modifyRoutePointsLineString.addEventListener("modifyend", function () {
   routeMe();
 });
 
@@ -173,7 +229,7 @@ const poiLayer = new VectorLayer({
           color: [0, 0, 0, 0.9],
           width: 1.5,
         }),
-        padding: [0, 0, 0, 1],
+        padding: [2, 1, 0, 2],
       }),
     });
   },
@@ -224,7 +280,7 @@ const map = new Map({
 });
 
 map.addInteraction(modifyroutePoints);
-map.addInteraction(modifyroutePointsLineString);
+map.addInteraction(modifyRoutePointsLineString);
 map.addInteraction(modifyPoiLayer);
 
 window.onbeforeunload = function () {
@@ -257,6 +313,7 @@ function routeMe() {
     for (let i = 0; i < routePoints.length; i++) {
       console.log(i, toLonLat(routePoints[i]));
     };
+    routeLineString.setCoordinates(routePoints);
   } else {
     console.log("routing has not started");
   }
@@ -285,6 +342,28 @@ contextPopupContent.addEventListener("click", function () {
 
 map.addEventListener("contextmenu", function (event) {
   event.preventDefault();
+
+  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+  if (closestRoutePoint) {
+    const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
+    if (distanceToClosestRoutePoint < 40) {
+      document.getElementById("removeRoutePosition").style.display = "unset";
+    }
+  } else {
+    document.getElementById("removeRoutePosition").style.display = "none";
+  }
+
+  const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+  if (closestPoi) {
+    const distanceToClosestPoi = getPixelDistance(map.getPixelFromCoordinate(closestPoi.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate));
+    if (distanceToClosestPoi < 40) {
+      document.getElementById("removePoiButton").style.display = "unset";
+      document.getElementById("removePoiButton").innerHTML = 'Ta bort POI "' + closestPoi.get("name") + '"';
+    }
+  } else {
+    document.getElementById("removePoiButton").style.display = "none";
+  }
+
   contextPopupContent.innerHTML = toStringXY(toLonLat(event.coordinate).reverse(), 5);
   contextPopup.setPosition(event.coordinate);
   contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
@@ -315,18 +394,13 @@ document.getElementById("addRoutePosition").addEventListener("click", function (
 
 document.getElementById("removeRoutePosition").addEventListener("click", function () {
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
-  if (closestRoutePoint) {
-    const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(contextPopup.getPosition()))
-    if (distanceToClosestRoutePoint < 40) {
-      routePointsLayer.getSource().removeFeature(closestRoutePoint);
-      const routePoints = routePointsLayer.getSource().getFeatures();
-      routePointsLineString.setCoordinates([]);
-      for (let i = 0; i < routePoints.length; i++) {
-        routePointsLineString.appendCoordinate(routePoints[i].getGeometry().getCoordinates());
-      };
-      routeMe();
-    }
-  }
+  routePointsLayer.getSource().removeFeature(closestRoutePoint);
+  const routePoints = routePointsLayer.getSource().getFeatures();
+  routePointsLineString.setCoordinates([]);
+  for (let i = 0; i < routePoints.length; i++) {
+    routePointsLineString.appendCoordinate(routePoints[i].getGeometry().getCoordinates());
+  };
+  routeMe();
   contextPopup.setPosition(undefined);
 });
 
@@ -349,11 +423,6 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
 
 document.getElementById("removePoiButton").addEventListener("click", function () {
   const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
-  if (closestPoi) {
-    const distanceToClosestPoi = getPixelDistance(map.getPixelFromCoordinate(closestPoi.getGeometry().getCoordinates()), map.getPixelFromCoordinate(contextPopup.getPosition()))
-    if (distanceToClosestPoi < 40) {
-      poiLayer.getSource().removeFeature(closestPoi);
-    }
-  }
+  poiLayer.getSource().removeFeature(closestPoi);
   contextPopup.setPosition(undefined);
 });
