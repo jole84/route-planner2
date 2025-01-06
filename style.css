@@ -1,10 +1,12 @@
 @import "node_modules/ol/ol.css";
 
-html, body {
+html,
+body {
   margin: 0;
   height: 100%;
   font-family: "roboto", sans-serif;
 }
+
 #map {
   position: absolute;
   top: 0;
@@ -119,6 +121,15 @@ kbd {
   max-width: fit-content;
 }
 
+.btn:active {
+  transform: translateY(2px);
+}
+
+.btn:hover {
+  filter: brightness(0.9);
+  transition: 0.2s;
+}
+
 .btn-danger {
   background-color: #dc4c64;
 }
@@ -140,7 +151,7 @@ kbd {
 }
 
 .textBox {
-  background-image: linear-gradient(rgba(251,251,251,0.95), rgba(251,251,251,0.95)),url("https://jole84.se/84.svg");
+  background-image: linear-gradient(rgba(251, 251, 251, 0.95), rgba(251, 251, 251, 0.95)), url("https://jole84.se/84.svg");
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-position: center;
@@ -158,10 +169,46 @@ kbd {
   display: flex;
   gap: 5px;
   flex-direction: column;
+  overflow: overlay;
 }
 
 .buttonGroup {
   gap: 5px;
   flex-direction: column;
   display: flex;
+}
+
+/* contextmenu */
+#contextPopup {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0px 0px 10px;
+  color: rgb(32, 32, 32);
+}
+
+#contextPopupContent {
+  font-weight: bold;
+}
+
+#contextPopupContent:empty {
+  display: none;
+}
+
+#contextPopupCloser {
+  font-size: larger;
+  position: absolute;
+  top: 2px;
+  right: 5px;
+  cursor: pointer;
+}
+
+.routeControl {
+  padding: 10px 20px 10px 20px;
+  cursor: pointer;
+}
+
+.routeControl:hover {
+  background-color: lightgray;
 }
