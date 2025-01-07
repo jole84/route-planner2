@@ -17,35 +17,96 @@ import TileLayer from "ol/layer/Tile";
 import TileWMS from "ol/source/TileWMS.js";
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
+import MultiLineString from 'ol/geom/MultiLineString.js';
 
 const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const helpDiv = document.getElementById("helpDiv");
 const gpxFileNameInput = document.getElementById("gpxFileNameInput");
+const gpxFileName = document.getElementById("gpxFileName");
+const savePoiNameInput = document.getElementById("savePoiNameInput");
+const poiFileName = document.getElementById("poiFileName");
+
+let trackLength = 0;
+let poiPosition;
+let enableVoiceHint = false;
 
 localStorage.centerCoordinate = localStorage.centerCoordinate || JSON.stringify(defaultCenter);
 localStorage.centerZoom = localStorage.centerZoom || defaultZoom;
 localStorage.routePlannerMapMode = localStorage.routePlannerMapMode || 0; // default map
 
 document.getElementById("openMenuButton").addEventListener("click", () => {
-  menuDivcontent.innerHTML = menuItems.innerHTML;
-  document.getElementById("someCheckbox").checked = true;
+  menuDivcontent.replaceChildren(menuItems);
+  document.getElementById("enableVoiceHint").checked = enableVoiceHint;
+});
+document.getElementById("enableVoiceHint").addEventListener("change", function () {
+  enableVoiceHint = document.getElementById("enableVoiceHint").checked;
+  routeMe();
 });
 document.getElementById("menuDivCloseButton").addEventListener("click", () => {
-  menuDivcontent.innerHTML = "";
+  menuDivcontent.replaceChildren();
 });
 
 document.getElementById("openhelpButton").addEventListener("click", () => {
-  menuDivcontent.innerHTML = helpDiv.innerHTML;
+  menuDivcontent.replaceChildren(helpDiv);
 });
+
+document.getElementById("clickFileButton").onclick = function () {
+  customFileButton.click();
+}
+
+function getFileFormat(fileExtention) {
+  if (fileExtention === "gpx") {
+    return new GPX();
+  } else if (fileExtention === "kml") {
+    return new KML({ extractStyles: false });
+  } else if (fileExtention === "geojson") {
+    return new GeoJSON();
+  }
+}
+
+document.getElementById("customFileButton").addEventListener("change", (evt) => {
+  console.log(evt)
+  const files = evt.target.files; // FileList object
+  // remove previously loaded gpx files
+  gpxLayer.getSource().clear();
+  for (let i = 0; i < files.length; i++) {
+    const reader = new FileReader();
+    reader.readAsText(files[i], "UTF-8");
+    reader.onload = function (evt) {
+      const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
+      const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      });
+      gpxLayer.getSource().addFeatures(gpxFeatures);
+    };
+  }
+});
+
+document.getElementById("exportRouteButton").onclick = function () {
+  let fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
+  menuDivcontent.replaceChildren(gpxFileNameInput);
+
+  gpxFileName.placeholder = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
+
+  document.getElementById("saveFileOkButton").onclick = () => {
+    fileName = gpxFileName.value || gpxFileName.placeholder;
+    const fileFormat = new GPX();
+    const gpxFile = fileFormat.writeFeatures(routeLineLayer.getSource().getFeatures(), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857",
+    });
+    const blob = new Blob([gpxFile], { type: "application/gpx+xml" })
+    saveAs(blob, fileName + ".gpx");
+    menuDivcontent.replaceChildren();
+  }
+}
 
 // temp
 document.getElementById("lowerLeftButton").addEventListener("click", () => {
-  menuDivcontent.innerHTML = "poiLayer features:<br><pre>" + JSON.stringify(poiLayer.getSource().getFeatures(), null, 2) + "</pre>";
-});
-document.getElementById("lowerRightButton").addEventListener("click", () => {
-  menuDivcontent.innerHTML = "destinationPoints: <pre>" + JSON.stringify(routePointsLineString.getCoordinates(), null, 2) + "</pre>";
-  // menuDivcontent.innerHTML += "routePointsLayer: <pre>" + JSON.stringify(routePointsLayer.getSource().getFeatures(), null, 2) + "</pre>";
+  // menuDivcontent.innerHTML = 
+  document.getElementById("trackLength").innerHTML = "<pre>" + JSON.stringify(routePointsLayer.getSource().getFeatures(), null, 2) + "</pre>";
 });
 
 const slitlagerkarta = new TileLayer({
@@ -149,7 +210,7 @@ function getPointType(i, y) {
 
 const routePointsLayer = new VectorLayer({
   source: new VectorSource(),
-  style:  function (feature) {
+  style: function (feature) {
     return routePointStyle[feature.get("pointType")];
   },
 });
@@ -184,10 +245,17 @@ const routePointsLineStringLayer = new VectorLayer({
 
 routePointsLineString.addEventListener("change", function () {
   const routePoints = routePointsLineString.getCoordinates();
+  localStorage.routePoints = JSON.stringify(routePoints);
+  const currentFeatures = [];
+  routePointsLayer.getSource().forEachFeature(function (feature) {
+    currentFeatures[feature.getId()] = feature.get("straight");
+  });
   routePointsLayer.getSource().clear();
   for (var i = 0; i < routePoints.length; i++) {
     const routePointMarker = new Feature({
       geometry: new Point(routePoints[i]),
+      straight: currentFeatures[i] || false,
+      routePointMarker: true,
       pointType: getPointType(i, routePoints.length),
     });
     routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
@@ -203,7 +271,54 @@ modifyRoutePointsLineString.addEventListener("modifyend", function () {
 
 const voiceHintsLayer = new VectorLayer({
   source: new VectorSource(),
+  style: function (feature) {
+    gpxStyle["Point"].getText().setText(feature.get("name"));
+    return gpxStyle[feature.getGeometry().getType()];
+  },
 });
+
+const allowedTurnType = [2, 4, 5, 7, 13, 14];
+function translateVoicehint([geoPart, turnInstruction, roundaboutExit, distanceToNext, turnDeg]) {
+  let returnString = "";
+  const turnType = {
+    1: "Fortsätt (rakt fram)",
+    2: "Sväng vänster",
+    3: "Sväng svagt åt vänster",
+    4: "Sväng skarpt vänster",
+    5: "Sväng höger",
+    6: "Sväng svagt åt höger",
+    7: "Sväng skarpt höger",
+    8: "Håll vänster",
+    9: "Håll höger",
+    10: "U-sväng",
+    11: "U-sväng höger",
+    12: "Off route",
+    13: "I rondellen, tag ",
+    14: "I rondellen, tag ",
+    15: "180 grader u-sväng",
+    16: "Beeline routing",
+  }
+  const nummer = {
+    1: "första",
+    2: "andra",
+    3: "tredje",
+    4: "fjärde",
+    5: "femte",
+  }
+  returnString += turnInstruction + " " + turnType[turnInstruction];
+  if (roundaboutExit > 0) {
+    returnString += nummer[roundaboutExit] + " utfarten";
+  }
+  returnString += " " + distanceToNext + " m "
+  // if (distanceToNext < 1000) {
+  //   returnString += ",\nfortsätt i " + Math.round(distanceToNext) + "m"
+  // }
+  // if (distanceToNext > 1000) {
+  //   returnString += ",\nfortsätt i " + Math.round(distanceToNext / 1000) + "km"
+  // }
+  // returnString += turnDeg;
+  return returnString;
+}
 
 const poiLayer = new VectorLayer({
   source: new VectorSource(),
@@ -236,9 +351,63 @@ const poiLayer = new VectorLayer({
 });
 const modifyPoiLayer = new Modify({ source: poiLayer.getSource() });
 
+JSON.parse(localStorage.poiLayer || "[]");
+
+poiLayer.getSource().addFeatures(JSON.parse(localStorage.poiLayer || "[]"));
+
+poiLayer.addEventListener("change", function () {
+  const poiFeatures = poiLayer.getSource().getFeatures();
+});
+
+const gpxStyle = {
+  Point: new Style({
+    image: new Icon({
+      anchor: [0.5, 1],
+      opacity: 0.85,
+      src: "https://jole84.se/poi-marker-blue.svg",
+    }),
+    text: new Text({
+      font: "14px Roboto,monospace",
+      textAlign: "left",
+      offsetX: 10,
+      fill: new Fill({
+        color: "blue",
+      }),
+      backgroundFill: new Fill({
+        color: [255, 255, 255, 0.9],
+      }),
+      backgroundStroke: new Stroke({
+        color: [0, 0, 0, 0.9],
+        width: 1.5,
+      }),
+      padding: [2, 1, 0, 2],
+    }),
+  }),
+  LineString: new Style({
+    stroke: new Stroke({
+      color: [0, 0, 255, 0.4],
+      width: 10,
+    }),
+  }),
+  Polygon: new Style({
+    stroke: new Stroke({
+      color: [255, 0, 0, 0.6],
+      width: 2,
+    }),
+    fill: new Fill({
+      color: [255, 0, 0, 0.1],
+    }),
+  }),
+};
+gpxStyle["MultiLineString"] = gpxStyle["LineString"];
+gpxStyle["MultiPolygon"] = gpxStyle["Polygon"];
 
 const gpxLayer = new VectorLayer({
   source: new VectorSource(),
+  style: function (feature) {
+    gpxStyle["Point"].getText().setText(feature.get("name"));
+    return gpxStyle[feature.getGeometry().getType()];
+  },
 });
 
 const drawLayer = new VectorLayer({
@@ -299,23 +468,77 @@ function switchMap() {
   topoweb.setVisible(false);
   osm.setVisible(false);
 
-  slitlagerkarta.setVisible(true);
-  ortofoto.setVisible(true);
-  ortofoto.setMinZoom(15.5);
+  if (localStorage.routePlannerMapMode == 0) {
+    slitlagerkarta.setVisible(true);
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(15.5);
+  } else if (localStorage.routePlannerMapMode == 1) {
+    slitlagerkarta_nedtonad.setVisible(true);
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(15.5);
+  } else if (localStorage.routePlannerMapMode == 2) {
+    topoweb.setVisible(true);
+  } else if (localStorage.routePlannerMapMode == 3) {
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(1);
+    ortofoto.setMaxZoom(20);
+  } else if (localStorage.routePlannerMapMode == 4) {
+    osm.setVisible(true);
+  }
 }
+document.getElementById("layerSelector").addEventListener("change", function () {
+  localStorage.routePlannerMapMode = layerSelector.value;
+  switchMap();
+});
 switchMap();
 
 function routeMe() {
-  const routePoints = routePointsLineString.getCoordinates();
-  if (routePoints.length >= 2) {
-    console.log("routing has started");
+  const coordsString = [];
+  const straightPoints = [];
+  voiceHintsLayer.getSource().clear();
+  routePointsLayer.getSource().forEachFeature(function (feature) {
+    coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates());
+    if (feature.get("straight")) {
+      straightPoints.push(feature.getId());
+    }
+  });
+  
+  if (coordsString.length >= 2) {
+    const brouterUrl = "https://brouter.de/brouter?lonlats=" +
+    coordsString.join("|") +
+    "&profile=car-fast&alternativeidx=0&format=geojson&timode=2&straight=" +
+    straightPoints.join(",");
 
-    for (let i = 0; i < routePoints.length; i++) {
-      console.log(i, toLonLat(routePoints[i]));
-    };
-    routeLineString.setCoordinates(routePoints);
+    fetch(brouterUrl).then(function (response) {
+      response.json().then(function (result) {
+        trackLength = result.features[0].properties["track-length"] / 1000; // track-length in km
+        const totalTime = result.features[0].properties["total-time"]; // track-time in milliseconds
+        document.getElementById("trackLength").innerHTML = trackLength + " km";
+        document.getElementById("totalTime").innerHTML = totalTime + " s";
+        // add route information to info box
+
+        routeLineString.setCoordinates(new GeoJSON().readFeature(result.features[0], {
+          dataProjection: "EPSG:4326",
+          featureProjection: "EPSG:3857"
+        }).getGeometry().getCoordinates());
+
+        if (enableVoiceHint) {
+
+          const voicehints = result.features[0].properties.voicehints;
+          const routeGeometryCoordinates = routeLineString.getCoordinates();
+          for (var i = 0; i < voicehints.length; i++) {
+            const marker = new Feature({
+              type: "routePoint",
+              name: translateVoicehint(voicehints[i]),
+              geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
+            });
+            voiceHintsLayer.getSource().addFeature(marker);
+          }
+        }
+      });
+    });
   } else {
-    console.log("routing has not started");
+    routeLineString.setCoordinates([]);
   }
 }
 
@@ -332,7 +555,13 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
   contextPopup.setPosition(undefined);
 });
 
-map.addEventListener("click", function () {
+map.addEventListener("click", function (event) {
+  map.forEachFeatureAtPixel(event.pixel, function (feature) {
+    if (feature.get("routePointMarker")) {
+      feature.set("straight",  !feature.get("straight"));
+    }
+  });
+  routeMe();
   contextPopup.setPosition(undefined);
 });
 
@@ -348,6 +577,8 @@ map.addEventListener("contextmenu", function (event) {
     const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
     if (distanceToClosestRoutePoint < 40) {
       document.getElementById("removeRoutePosition").style.display = "unset";
+    } else {
+      document.getElementById("removeRoutePosition").style.display = "none";
     }
   } else {
     document.getElementById("removeRoutePosition").style.display = "none";
@@ -359,6 +590,8 @@ map.addEventListener("contextmenu", function (event) {
     if (distanceToClosestPoi < 40) {
       document.getElementById("removePoiButton").style.display = "unset";
       document.getElementById("removePoiButton").innerHTML = 'Ta bort POI "' + closestPoi.get("name") + '"';
+    } else {
+      document.getElementById("removePoiButton").style.display = "none";
     }
   } else {
     document.getElementById("removePoiButton").style.display = "none";
@@ -368,6 +601,7 @@ map.addEventListener("contextmenu", function (event) {
   contextPopup.setPosition(event.coordinate);
   contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
 });
+
 
 
 document.getElementById("gmaplink").addEventListener("click", function () {
@@ -380,10 +614,10 @@ document.getElementById("streetviewlink").addEventListener("click", function () 
   window.open(gmaplink);
 });
 
-document.getElementById("navAppRoute").addEventListener("click", function () {
-  var navapplink = "https://jole84.se/nav-app/index.html?destinationPoints=" + JSON.stringify([toLonLat(contextPopup.getPosition())]);
-  window.open(navapplink);
-});
+// document.getElementById("navAppRoute").addEventListener("click", function () {
+//   var navapplink = "https://jole84.se/nav-app/index.html?destinationPoints=" + JSON.stringify([toLonLat(contextPopup.getPosition())]);
+//   window.open(navapplink);
+// });
 
 
 document.getElementById("addRoutePosition").addEventListener("click", function () {
@@ -405,24 +639,28 @@ document.getElementById("removeRoutePosition").addEventListener("click", functio
 });
 
 document.getElementById("addPoiButton").addEventListener("click", function () {
-  menuDivcontent.innerHTML = document.getElementById("savePoiNameInput").innerHTML;
-  const contextPopupPosition = contextPopup.getPosition();
-  document.getElementById("poiFileName").value = toStringXY(toLonLat(contextPopupPosition).reverse(), 5);
-  document.getElementById("savePoiOkButton").addEventListener("click", function () {
-    const poiName = document.getElementById("poiFileName").value;
-    menuDivcontent.innerHTML = "";
-    console.log(poiName);
-    const poiMarker = new Feature({
-      geometry: new Point(contextPopupPosition),
-      name: poiName,
-    });
-    poiLayer.getSource().addFeature(poiMarker);
-  });
+  poiPosition = contextPopup.getPosition();
+  menuDivcontent.replaceChildren(savePoiNameInput);
   contextPopup.setPosition(undefined);
+  poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
+});
+
+document.getElementById("savePoiOkButton").addEventListener("click", function () {
+  const poiMarker = new Feature({
+    geometry: new Point(poiPosition),
+    name: poiFileName.value || poiFileName.placeholder,
+  });
+  poiLayer.getSource().addFeature(poiMarker);
+  routeLineLayer.getSource().addFeature(poiMarker);
+  menuDivcontent.replaceChildren();
+  poiFileName.value = "";
 });
 
 document.getElementById("removePoiButton").addEventListener("click", function () {
   const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
   poiLayer.getSource().removeFeature(closestPoi);
+  routeLineLayer.getSource().removeFeature(closestPoi);
   contextPopup.setPosition(undefined);
 });
+
+//remove poiLayer > use routeLineLayer

@@ -20,12 +20,6 @@ body {
   position: absolute;
 }
 
-#lowerRightGroup {
-  bottom: 5px;
-  position: absolute;
-  right: 5px;
-}
-
 #infoGroup {
   backdrop-filter: blur(5px);
   background-color: rgba(251, 251, 251, 0.6);
@@ -37,14 +31,21 @@ body {
   letter-spacing: 1.3px;
   line-height: 1.4;
   max-width: 90%;
-  padding-bottom: 5px;
+  /* padding-bottom: 5px;
   padding-left: 5px;
-  padding-right: 5px;
+  padding-right: 5px; */
+  max-height: calc(100% - 20px);
+  padding: 5px;
   position: absolute;
   right: 5px;
   top: 5px;
   word-wrap: break-word;
   z-index: 10;
+  overflow: overlay;
+}
+
+#infoGroup:has(#trackLength:empty) {
+  display: none;
 }
 
 #menuContainer {
@@ -55,10 +56,14 @@ body {
   align-items: center;
 }
 
-#menuDivContent {
+#menuDivContent > div {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+#gpxFileName {
+  min-width: 15rem;
 }
 
 .textBox:has(#menuDivContent:empty) {
@@ -70,7 +75,7 @@ body {
 }
 
 .form-check-input[type=checkbox] {
-  margin-right: 0px;
+  margin: 0px;
 }
 
 .invisible {
@@ -151,19 +156,15 @@ kbd {
 }
 
 .textBox {
-  background-image: linear-gradient(rgba(251, 251, 251, 0.95), rgba(251, 251, 251, 0.95)), url("https://jole84.se/84.svg");
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-position: center;
-  background-size: 90%;
   position: absolute;
+  background-color: white;
   max-width: calc(100% - 30px);
   max-height: calc(100% - 30px);
   min-width: 5rem;
   color: rgb(32, 32, 32);
-  background-color: rgba(251, 251, 251, 1);
-  border: 1px solid rgb(32, 32, 32);
   border-radius: 5px;
+  box-shadow: 0px 0px 10px;
+  color: rgb(32, 32, 32);
   z-index: 10;
   padding: 10px;
   display: flex;
@@ -200,7 +201,7 @@ kbd {
   font-size: larger;
   position: absolute;
   top: 2px;
-  right: 5px;
+  right: 7px;
   cursor: pointer;
 }
 
