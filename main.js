@@ -8,6 +8,7 @@ import { toStringXY } from "ol/coordinate";
 import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
 import Draw from 'ol/interaction/Draw.js';
+import Collection from 'ol/Collection.js';
 import KeyboardPan from "ol/interaction/KeyboardPan.js";
 import LineString from "ol/geom/LineString";
 import OSM from "ol/source/OSM.js";
@@ -93,7 +94,16 @@ document.getElementById("exportRouteButton").onclick = function () {
   document.getElementById("saveFileOkButton").onclick = () => {
     fileName = gpxFileName.value || gpxFileName.placeholder;
     const fileFormat = new GPX();
-    const gpxFile = fileFormat.writeFeatures(routeLineLayer.getSource().getFeatures(), {
+    const collection = new Collection();
+    collection.extend(poiLayer.getSource().getFeatures());
+
+    if (routeLineString.getCoordinates().length > 0) {
+      collection.extend(routeLineLayer.getSource().getFeatures());
+    }
+    if (enableVoiceHint) {
+      collection.extend(voiceHintsLayer.getSource().getFeatures());
+    }
+    const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
       dataProjection: "EPSG:4326",
       featureProjection: "EPSG:3857",
     });
@@ -105,8 +115,19 @@ document.getElementById("exportRouteButton").onclick = function () {
 
 // temp
 document.getElementById("lowerLeftButton").addEventListener("click", () => {
+  const collection = new Collection();
+  collection.extend(poiLayer.getSource().getFeatures());
+  collection.extend(routeLineLayer.getSource().getFeatures());
+  routeLineString.getCoordinates()
+  console.log(routeLineString.getCoordinates().length)
+  const fileFormat = new GPX();
+  const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+  });
+  console.log(gpxFile)
   // menuDivcontent.innerHTML = 
-  document.getElementById("trackLength").innerHTML = "<pre>" + JSON.stringify(routePointsLayer.getSource().getFeatures(), null, 2) + "</pre>";
+  document.getElementById("trackLength").innerHTML = "<pre>" + (gpxFile) + "</pre>";
 });
 
 const slitlagerkarta = new TileLayer({
@@ -651,7 +672,6 @@ document.getElementById("savePoiOkButton").addEventListener("click", function ()
     name: poiFileName.value || poiFileName.placeholder,
   });
   poiLayer.getSource().addFeature(poiMarker);
-  routeLineLayer.getSource().addFeature(poiMarker);
   menuDivcontent.replaceChildren();
   poiFileName.value = "";
 });
