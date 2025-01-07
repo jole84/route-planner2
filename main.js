@@ -577,12 +577,12 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
 });
 
 map.addEventListener("click", function (event) {
-  map.forEachFeatureAtPixel(event.pixel, function (feature) {
-    if (feature.get("routePointMarker")) {
-      feature.set("straight",  !feature.get("straight"));
-    }
-  });
-  routeMe();
+  // map.forEachFeatureAtPixel(event.pixel, function (feature) {
+  //   if (feature.get("routePointMarker")) {
+  //     feature.set("straight",  !feature.get("straight"));
+  //   }
+  // });
+  // routeMe();
   contextPopup.setPosition(undefined);
 });
 
@@ -592,6 +592,20 @@ contextPopupContent.addEventListener("click", function () {
 
 map.addEventListener("contextmenu", function (event) {
   event.preventDefault();
+
+  document.getElementById("flipStraight").style.display = "none";
+  map.forEachFeatureAtPixel(event.pixel, function (feature) {
+    if (feature.get("routePointMarker")) {
+      document.getElementById("flipStraight").innerHTML = "rak " + feature.get("straight");
+      document.getElementById("flipStraight").style.display = "unset";
+      // feature.set("straight",  !feature.get("straight"));
+    }
+    document.getElementById("flipStraight").onclick = function () {
+      feature.set("straight",  !feature.get("straight"));
+      document.getElementById("flipStraight").innerHTML = "rak " + feature.get("straight");
+      routeMe();
+    }
+  });
 
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
   if (closestRoutePoint) {
