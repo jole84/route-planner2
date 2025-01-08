@@ -35,6 +35,11 @@
       <option value="3">Lantmäteriet Orto</option>
       <option value="4">OpenStreetMap</option>
     </select>
+    <button id="gpxToRouteButton" class="btn btn-info">omvandla GPX till rutt</button>
+    <button id="reverseRoute" class="btn btn-primary">Vänd rutt</button>
+    <button id="clickFileButton" class="btn btn-info">Ladda GPX</button>
+    <button id="exportRouteButton" class="btn btn-warning">Exportera Rutt</button>
+    <button id="clearMapButton" class="btn btn-danger">Rensa karta</button>
   </div>
 
   <!-- menuContainer -->
@@ -58,21 +63,17 @@
         <input class="form-check-input" role="switch" type="checkbox" id="enableVoiceHint">
         <label class="form-check-label" for="enableVoiceHint">enableVoiceHint</label>
       </div>
-      <button id="gpxToRouteButton" class="btn btn-info">omvandla GPX till rutt</button>
-      <button id="clickFileButton" class="btn btn-info">Ladda GPX</button>
-      <button id="exportRouteButton" class="btn btn-warning">Exportera Rutt</button>
     </div>
 
     <!-- helpDiv -->
     <div id="helpDiv">
       <div><kbd>Högerklick</kbd> lägg till/ta bort waypoint</div>
-      <div><kbd>Vänsterklick</kbd> växla waypoint till offroad</div>
-      <div><kbd>Alt + vänsterklick</kbd> lägg till POI</div>
+      <!-- <div><kbd>Alt + vänsterklick</kbd> lägg till POI</div> -->
       <div><kbd>Ctrl + vänsterklick</kbd> öppna streetview</div>
-      <div><kbd>Shift + högerklick</kbd> lägg till offroad waypoint</div>
+      <!-- <div><kbd>Shift + högerklick</kbd> lägg till offroad waypoint</div> -->
       <div><kbd>Backspace</kbd> ta bort sista waypoint</div>
       <div><kbd>Shift + mus</kbd> frihandsmarkering</div>
-      <div><kbd>r</kbd> radera senaste markering</div>
+      <!-- <div><kbd>r</kbd> radera senaste markering</div> -->
     </div>
 
     <!-- gpxFileNameInput -->
@@ -101,11 +102,12 @@
       <div class="routeControl" id="gmaplink">Visa på Google Maps</div>
       <div class="routeControl" id="streetviewlink">Visa Streetview</div>
       <!-- <div class="routeControl" id="navAppRoute">Navigera hit med Nav-app</div> -->
-      <div class="routeControl" id="addRoutePosition">+ Lägg till ruttpunkt</div>
-      <div class="routeControl" id="removeRoutePosition" style="display: none;">- Ta bort ruttpunkt</div>
-      <div class="routeControl" id="addPoiButton">Lägg till POI</div>
-      <div class="routeControl" id="removePoiButton" style="display: none;">Ta bort POI</div>
+      <div class="routeControl" id="addRoutePosition"><img height="15rem" src="https://jole84.se/start-marker.svg"> Lägg till ruttpunkt</div>
+      <div class="routeControl" id="removeRoutePosition" style="display: none;"><img height="15rem" src="https://jole84.se/end-marker.svg"> Ta bort ruttpunkt</div>
+      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/poi-marker.svg"> Lägg till POI</div>
+      <div class="routeControl" id="removePoiButton" style="display: none;">✖ Ta bort POI</div>
       <div class="routeControl" id="flipStraight" style="display: none;">växla rak</div>
+      <div class="routeControl" id="removeDrawing" style="display: none;">Ta bort ritning</div>
     </div>
   </div>
 </body>
