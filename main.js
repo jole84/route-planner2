@@ -312,6 +312,7 @@ const routePointsLineStringLayer = new VectorLayer({
   source: new VectorSource({
     features: [new Feature({
       geometry: routePointsLineString,
+      routeLineString: true,
     })],
   }),
   style: function (feature) {
