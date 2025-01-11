@@ -106,6 +106,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
       dataProjection: "EPSG:4326",
       featureProjection: "EPSG:3857",
+      decimals: 5,
     });
     const blob = new Blob([gpxFile], { type: "application/gpx+xml" })
     saveAs(blob, fileName + ".gpx");
@@ -238,7 +239,6 @@ const routeLineString = new LineString([]);
 const routeLineLayer = new VectorLayer({
   source: new VectorSource({
     features: [new Feature({
-      type: "routeLine",
       geometry: routeLineString,
     })],
   }),
@@ -628,7 +628,6 @@ function routeMe() {
           const routeGeometryCoordinates = routeLineString.getCoordinates();
           for (var i = 0; i < voicehints.length; i++) {
             const marker = new Feature({
-              type: "routePoint",
               name: translateVoicehint(voicehints[i]),
               geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
             });
@@ -673,7 +672,8 @@ map.addEventListener("contextmenu", function (event) {
   event.preventDefault();
   document.getElementById("removeDrawing").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
-  map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
+  map.forEachFeatureAtPixel(event.pixel, function (feature) {
+    console.log(feature.getProperties());
     if (feature.get("drawing")) {
       document.getElementById("removeDrawing").style.display = "unset";
     }
