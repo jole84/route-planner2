@@ -80,6 +80,9 @@ document.getElementById("customFileButton").addEventListener("change", (evt) => 
         dataProjection: "EPSG:4326",
         featureProjection: "EPSG:3857",
       });
+      gpxFeatures.forEach(function (feature) {
+        feature.set("gpxFeature", true);
+      })
       gpxLayer.getSource().addFeatures(gpxFeatures);
     };
   }
@@ -162,6 +165,7 @@ document.getElementById("gpxToRouteButton").addEventListener("click", function (
 
 document.getElementById("reverseRoute").addEventListener("click", function () {
   routePointsLineString.setCoordinates(routePointsLineString.getCoordinates().reverse());
+  contextPopup.setPosition();
   routeMe();
 });
 
@@ -240,6 +244,7 @@ const routeLineLayer = new VectorLayer({
   source: new VectorSource({
     features: [new Feature({
       geometry: routeLineString,
+      routeLineString: true,
     })],
   }),
   style: function (feature) {
@@ -476,11 +481,11 @@ const gpxStyle = {
   }),
   Polygon: new Style({
     stroke: new Stroke({
-      color: [255, 0, 0, 0.6],
+      color: [255, 0, 0, 1],
       width: 2,
     }),
     fill: new Fill({
-      color: [255, 0, 0, 0.1],
+      color: [255, 0, 0, 0.3],
     }),
   }),
 };
@@ -651,7 +656,7 @@ const contextPopup = new Overlay({
 map.addOverlay(contextPopup);
 
 document.getElementById("contextPopupCloser").addEventListener("click", function () {
-  contextPopup.setPosition(undefined);
+  contextPopup.setPosition();
 });
 
 map.addEventListener("click", function (event) {
@@ -661,7 +666,7 @@ map.addEventListener("click", function (event) {
   //   }
   // });
   // routeMe();
-  contextPopup.setPosition(undefined);
+  contextPopup.setPosition();
 });
 
 contextPopupContent.addEventListener("click", function () {
@@ -670,10 +675,18 @@ contextPopupContent.addEventListener("click", function () {
 
 map.addEventListener("contextmenu", function (event) {
   event.preventDefault();
+  document.getElementById("gpxToRouteButton").style.display = "none";
   document.getElementById("removeDrawing").style.display = "none";
+  document.getElementById("reverseRoute").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
   map.forEachFeatureAtPixel(event.pixel, function (feature) {
     console.log(feature.getProperties());
+    if (feature.get("gpxFeature")) {
+      document.getElementById("gpxToRouteButton").style.display = "unset";
+    }
+    if (feature.get("routeLineString")) {
+      document.getElementById("reverseRoute").style.display = "unset";
+    }
     if (feature.get("drawing")) {
       document.getElementById("removeDrawing").style.display = "unset";
     }
@@ -772,7 +785,7 @@ document.getElementById("streetviewlink").addEventListener("click", function () 
 
 document.getElementById("addRoutePosition").addEventListener("click", function () {
   routePointsLineString.appendCoordinate(contextPopup.getPosition());
-  contextPopup.setPosition(undefined);
+  contextPopup.setPosition();
   routeMe();
 });
 
@@ -789,13 +802,13 @@ document.getElementById("removeRoutePosition").addEventListener("click", functio
   };
   routePointsLineString.setCoordinates(newRoutePoints);
   routeMe();
-  contextPopup.setPosition(undefined);
+  contextPopup.setPosition();
 });
 
 document.getElementById("addPoiButton").addEventListener("click", function () {
   poiPosition = contextPopup.getPosition();
   menuDivcontent.replaceChildren(savePoiNameInput);
-  contextPopup.setPosition(undefined);
+  contextPopup.setPosition();
   poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
 });
 
@@ -816,5 +829,5 @@ function addPoi(poiPosition, name) {
 document.getElementById("removePoiButton").addEventListener("click", function () {
   const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
   poiLayer.getSource().removeFeature(closestPoi);
-  contextPopup.setPosition(undefined);
+  contextPopup.setPosition();
 });
