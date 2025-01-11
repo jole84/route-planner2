@@ -113,18 +113,26 @@ document.getElementById("exportRouteButton").onclick = function () {
   }
 }
 
+// document.getElementById("showGPX").onclick = function () {
+//   gpxLayer.setVisible(document.getElementById("showGPX").checked);
+// }
+
+document.getElementById("gpxOpacity").addEventListener("change", function () {
+  gpxLayer.setOpacity(parseFloat(document.getElementById("gpxOpacity").value));
+});
+
 document.getElementById("clearMapButton").addEventListener("click", function () {
-  routeLineString.setCoordinates([]);
-  localStorage.removeItem("routePoints");
-  localStorage.removeItem("poiString");
-  poiLayer.getSource().clear();
-  gpxLayer.getSource().clear();
-  routePointsLayer.getSource().clear();
-  voiceHintsLayer.getSource().clear();
-  routePointsLineStringLayer.getSource().clear();
-  drawLayer.getSource().clear();
-  document.getElementById("trackLength").innerHTML = "";
   document.getElementById("totalTime").innerHTML = "";
+  document.getElementById("trackLength").innerHTML = "";
+  drawLayer.getSource().clear();
+  gpxLayer.getSource().clear();
+  localStorage.removeItem("poiString");
+  localStorage.removeItem("routePoints");
+  poiLayer.getSource().clear();
+  routeLineString.setCoordinates([]);
+  routePointsLayer.getSource().clear();
+  routePointsLineStringLayer.getSource().clear();
+  voiceHintsLayer.getSource().clear();
 });
 
 document.getElementById("gpxToRouteButton").addEventListener("click", function () {
@@ -157,27 +165,27 @@ document.getElementById("reverseRoute").addEventListener("click", function () {
 });
 
 // temp
-document.getElementById("lowerLeftButton").addEventListener("click", () => {
-  const poiFeatures = poiLayer.getSource().getFeatures();
-  poiFeatures.forEach(function (element) {
+// document.getElementById("lowerLeftButton").addEventListener("click", () => {
+//   const poiFeatures = poiLayer.getSource().getFeatures();
+//   poiFeatures.forEach(function (element) {
 
-    console.log(element.getProperties())
-  })
-  console.log(JSON.parse(localStorage.poiString || "[]"));
+//     console.log(element.getProperties())
+//   })
+//   console.log(JSON.parse(localStorage.poiString || "[]"));
 
-  // const collection = new Collection([],{unique:true});
-  // collection.extend(poiLayer.getSource().getFeatures());
-  // collection.extend(routeLineLayer.getSource().getFeatures());
+//   const collection = new Collection([],{unique:true});
+//   collection.extend(poiLayer.getSource().getFeatures());
+//   collection.extend(routeLineLayer.getSource().getFeatures());
 
-  // console.log(collection.getArray())
-  // const fileFormat = new GPX();
-  // const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
-  //   dataProjection: "EPSG:4326",
-  //   featureProjection: "EPSG:3857",
-  // });
-  // console.log(gpxFile);
-  // document.getElementById("trackLength").innerHTML = "<pre>" + (gpxFile) + "</pre>";
-});
+//   console.log(collection.getArray())
+//   const fileFormat = new GPX();
+//   const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
+//     dataProjection: "EPSG:4326",
+//     featureProjection: "EPSG:3857",
+//   });
+//   console.log(gpxFile);
+//   document.getElementById("trackLength").innerHTML = "<pre>" + (gpxFile) + "</pre>";
+// });
 
 const slitlagerkarta = new TileLayer({
   source: new XYZ({
@@ -327,7 +335,7 @@ routePointsLineString.addEventListener("change", function () {
       routePointMarker: true,
       pointType: getPointType(i, routePoints.length),
     });
-    routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
+    routePointMarker.setId(i);
     routePointsLayer.getSource().addFeature(routePointMarker);
   };
 });
@@ -495,12 +503,12 @@ const drawLayer = new VectorLayer({
       width: 10,
     }),
   }),
-  drawing: true,
 });
 
 drawLayer.getSource().addEventListener("change", function () {
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
+    feature.set("drawing", true);
     drawFeatures.push(feature.getGeometry().getCoordinates());
   });
   localStorage.drawFeatures = JSON.stringify(drawFeatures);
@@ -666,16 +674,16 @@ map.addEventListener("contextmenu", function (event) {
   document.getElementById("removeDrawing").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
   map.forEachFeatureAtPixel(event.pixel, function (feature, layer) {
-    if (layer.get("drawing")) {
+    if (feature.get("drawing")) {
       document.getElementById("removeDrawing").style.display = "unset";
     }
     if (feature.get("routePointMarker")) {
-      document.getElementById("flipStraight").innerHTML = "rak " + feature.get("straight");
+      document.getElementById("flipStraight").innerHTML = feature.get("straight") ? "rak" : "böj";
       document.getElementById("flipStraight").style.display = "unset";
     }
     document.getElementById("flipStraight").onclick = function () {
       feature.set("straight", !feature.get("straight"));
-      document.getElementById("flipStraight").innerHTML = "rak " + feature.get("straight");
+      document.getElementById("flipStraight").innerHTML = feature.get("straight") ? "rak" : "böj";
       routeMe();
     }
     document.getElementById("removeDrawing").onclick = function () {
@@ -712,6 +720,15 @@ map.addEventListener("contextmenu", function (event) {
   contextPopupContent.innerHTML = toStringXY(toLonLat(event.coordinate).reverse(), 5);
   contextPopup.setPosition(event.coordinate);
   contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
+});
+
+map.on("pointermove", function (evt) {
+  const hit = map.hasFeatureAtPixel(evt.pixel);
+  if (hit) {
+    this.getTargetElement().style.cursor = "pointer";
+  } else {
+    this.getTargetElement().style.cursor = "auto";
+  }
 });
 
 let draw; // global so we can remove it later
@@ -761,12 +778,16 @@ document.getElementById("addRoutePosition").addEventListener("click", function (
 
 document.getElementById("removeRoutePosition").addEventListener("click", function () {
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
+  const closestRoutePointId = closestRoutePoint.getId();
   routePointsLayer.getSource().removeFeature(closestRoutePoint);
-  const routePoints = routePointsLayer.getSource().getFeatures();
-  routePointsLineString.setCoordinates([]);
-  for (let i = 0; i < routePoints.length; i++) {
-    routePointsLineString.appendCoordinate(routePoints[i].getGeometry().getCoordinates());
+  const newRoutePoints = [];
+  for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+    if (i === closestRoutePointId) {
+      continue;
+    }
+    newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
   };
+  routePointsLineString.setCoordinates(newRoutePoints);
   routeMe();
   contextPopup.setPosition(undefined);
 });

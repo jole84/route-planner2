@@ -25,9 +25,11 @@
 
   <!-- lowerLeftGroup -->
   <div class="buttonGroup" id="lowerLeftGroup">
+
+    
     <button id="openMenuButton" class="btn btn-success">meny</button>
     <button id="openhelpButton" class="btn btn-info">hjälp</button>
-    <button id="lowerLeftButton" class="btn btn-primary">lower Left Button</button>
+    <!-- <button id="lowerLeftButton" class="btn btn-primary">lower Left Button</button> -->
     <select id="layerSelector" class="form-select">
       <option value="0">Jole84 Terrängkarta</option>
       <option value="1">Jole84 Vägkarta</option>
@@ -35,11 +37,6 @@
       <option value="3">Lantmäteriet Orto</option>
       <option value="4">OpenStreetMap</option>
     </select>
-    <button id="gpxToRouteButton" class="btn btn-info">omvandla GPX till rutt</button>
-    <button id="reverseRoute" class="btn btn-primary">Vänd rutt</button>
-    <button id="clickFileButton" class="btn btn-info">Ladda GPX</button>
-    <button id="exportRouteButton" class="btn btn-warning">Exportera Rutt</button>
-    <button id="clearMapButton" class="btn btn-danger">Rensa karta</button>
   </div>
 
   <!-- menuContainer -->
@@ -59,10 +56,21 @@
       <div>Jole84 ruttplanerare med <a
         href="https://github.com/jole84/route-planner">öppen källkod</a>, karta skapad av öppna<br> data från Lantmäteriet
       och Trafikverket. Navigation från <a href="https://brouter.de/">BRouter</a>.</div>
+
       <div>
         <input class="form-check-input" role="switch" type="checkbox" id="enableVoiceHint">
         <label class="form-check-label" for="enableVoiceHint">enableVoiceHint</label>
       </div>
+      <!-- <div>
+        <input id="showGPX" class="form-check-input" type="checkbox" value="" checked />
+        <label for="showGPX" class="form-check-label">Visa GPX</label>
+      </div> -->
+      <label><input type="range" id="gpxOpacity" value="1" min="0" max="1" step="0.01">Visa GPX</label>
+      <button id="gpxToRouteButton" class="btn btn-info">omvandla GPX till rutt</button>
+      <button id="reverseRoute" class="btn btn-primary">Vänd rutt</button>
+      <button id="clickFileButton" class="btn btn-info">Ladda GPX</button>
+      <button id="exportRouteButton" class="btn btn-warning">Exportera Rutt</button>
+      <button id="clearMapButton" class="btn btn-danger">Rensa karta</button>
     </div>
 
     <!-- helpDiv -->
