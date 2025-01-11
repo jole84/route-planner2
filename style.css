@@ -5,6 +5,7 @@ body {
   margin: 0;
   height: 100%;
   font-family: "roboto", sans-serif;
+  background-color: #bfe6ff;
 }
 
 #map {

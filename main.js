@@ -9,16 +9,13 @@ import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
 import Draw from 'ol/interaction/Draw.js';
 import Collection from 'ol/Collection.js';
-import KeyboardPan from "ol/interaction/KeyboardPan.js";
-import LineString from "ol/geom/LineString";
+import { Polygon, Point, MultiLineString, LineString } from 'ol/geom';
 import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
-import Point from "ol/geom/Point.js";
 import TileLayer from "ol/layer/Tile";
 import TileWMS from "ol/source/TileWMS.js";
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
-import MultiLineString from 'ol/geom/MultiLineString.js';
 
 const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
@@ -132,6 +129,7 @@ document.getElementById("clearMapButton").addEventListener("click", function () 
   gpxLayer.getSource().clear();
   localStorage.removeItem("poiString");
   localStorage.removeItem("routePoints");
+  localStorage.removeItem("gpxLayer");
   poiLayer.getSource().clear();
   routeLineString.setCoordinates([]);
   routePointsLayer.getSource().clear();
@@ -500,6 +498,40 @@ const gpxLayer = new VectorLayer({
     return gpxStyle[feature.getGeometry().getType()];
   },
 });
+
+gpxLayer.getSource().addEventListener("change", function () {
+  const poiString = [];
+  gpxLayer.getSource().forEachFeature(function (feature) {
+    poiString.push([feature.getGeometry().getType(), feature.getGeometry().getCoordinates(), feature.get("name")]);
+  });
+  localStorage.gpxLayer = JSON.stringify(poiString);
+});
+
+JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
+  const geomType = element[0];
+  const coordinates = element[1];
+  const name = element[2];
+  const newFeature = new Feature({
+    geometry: newGeom(geomType, coordinates),
+    name: name,
+  });
+  gpxLayer.getSource().addFeature(newFeature);
+});
+
+function newGeom(featureType, coordinates) {
+  if (featureType == "Point") {
+    return new Point(coordinates);
+  }
+  if (featureType == "LineString") {
+    return new LineString(coordinates);
+  }
+  if (featureType == "MultiLineString") {
+    return new MultiLineString(coordinates);
+  }
+  if (featureType == "Polygon") {
+    return new Polygon(coordinates);
+  }
+}
 
 const drawLayer = new VectorLayer({
   source: new VectorSource(),
