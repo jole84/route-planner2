@@ -1,4 +1,5 @@
 import './style.css';
+import {altKeyOnly} from 'ol/events/condition.js';
 import { Feature, Map, View } from "ol";
 import { Modify } from "ol/interaction.js";
 import { saveAs } from 'file-saver';
@@ -819,18 +820,17 @@ map.on("pointermove", function (evt) {
 });
 
 let draw; // global so we can remove it later
-
 function addDraw() {
   draw = new Draw({
     source: drawLayer.getSource(),
     type: "LineString",
-    freehand: true,
+    freehandCondition: altKeyOnly,
   });
   map.addInteraction(draw);
 }
 
 document.addEventListener("keyup", function (event) {
-  if (event.key == "Shift") {
+  if (event.key == "Alt") {
     map.removeInteraction(draw);
   }
 });
@@ -843,7 +843,7 @@ document.addEventListener("keydown", function (event) {
       routePointsLineString.setCoordinates(newroutePointsLineString);
       routeMe();
     }
-    if (event.key == "Shift") {
+    if (event.key == "Alt") {
       addDraw();
     }
   }
