@@ -16,9 +16,23 @@ body {
 }
 
 #lowerLeftGroup {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   bottom: 5px;
   left: 5px;
+  right: 5px;
   position: absolute;
+  white-space: nowrap;
+  justify-content: space-between;
+  max-width: 350px;
+  gap: 5px;
+}
+
+@media (max-width: 550px) {
+  #lowerLeftGroup {
+    max-width: calc(100% - 10px);
+  }
 }
 
 #infoGroup {
@@ -63,12 +77,20 @@ body {
   gap: 5px;
 }
 
+/* #linkCodeDiv {
+  max-width: 400px;
+} */
+
 #gpxFileName {
   min-width: 15rem;
 }
 
 .textBox:has(#menuDivContent:empty) {
   display: none;
+}
+
+.user-select-all {
+  user-select: all;
 }
 
 .alignRight {
@@ -84,6 +106,7 @@ body {
 }
 
 .form-select {
+  width: 100%;
   background-color: #fff;
   border-radius: 5px;
   color: #4f4f4f;
@@ -91,6 +114,7 @@ body {
   font-weight: 400;
   line-height: 1.6;
   padding: .375rem 2.25rem .375rem .75rem;
+  /* max-width: 350px; */
 }
 
 .form-control {
@@ -124,7 +148,7 @@ kbd {
   font-weight: 500;
   padding: .75rem 1.5rem .75rem 1.5rem;
   text-transform: uppercase;
-  max-width: fit-content;
+  /* max-width: fit-content; */
 }
 
 .btn:active {
@@ -159,25 +183,18 @@ kbd {
 .textBox {
   position: absolute;
   background-color: white;
-  max-width: calc(100% - 30px);
+  max-width: min(calc(100% - 30px), 500px);
   max-height: calc(100% - 30px);
   min-width: 5rem;
   color: rgb(32, 32, 32);
   border-radius: 5px;
   box-shadow: 0px 0px 10px;
-  color: rgb(32, 32, 32);
   z-index: 10;
   padding: 10px;
   display: flex;
   gap: 5px;
   flex-direction: column;
   overflow: overlay;
-}
-
-.buttonGroup {
-  gap: 5px;
-  flex-direction: column;
-  display: flex;
 }
 
 /* contextmenu */

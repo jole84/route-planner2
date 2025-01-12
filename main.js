@@ -28,6 +28,11 @@ const poiFileName = document.getElementById("poiFileName");
 let trackLength = 0;
 let poiPosition;
 let enableVoiceHint = false;
+let qrCodeLink = new QRCode("qrRoutePlanner", {
+  text: "https://jole84.se/nav-app/index.html",
+  width: 350,
+  height: 350,
+});
 
 localStorage.centerCoordinate = localStorage.centerCoordinate || JSON.stringify(defaultCenter);
 localStorage.centerZoom = localStorage.centerZoom || defaultZoom;
@@ -56,8 +61,7 @@ document.getElementById("clickFileButton").onclick = function () {
 document.getElementById("mouseClickAdd").addEventListener("change", () => {
   localStorage.mouseClickAdd = document.getElementById("mouseClickAdd").checked;
 });
-
-document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd);
+document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd || "[]");
 
 function getFileFormat(fileExtention) {
   if (fileExtention === "gpx") {
@@ -91,11 +95,45 @@ document.getElementById("customFileButton").addEventListener("change", (evt) => 
   }
 });
 
+function toCoordinateString(coordinate) {
+  if (coordinate[1] > 100) {
+    coordinate = toLonLat(coordinate);
+  }
+  return [(Number(coordinate[0].toFixed(5))), Number(coordinate[1].toFixed(5))];
+}
+
 document.getElementById("exportRouteButton").onclick = function () {
-  let fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
   menuDivcontent.replaceChildren(gpxFileNameInput);
 
-  gpxFileName.placeholder = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
+  const routePoints = [];
+  const poiPoints = [];
+  let linkCode = "https://jole84.se/nav-app/index.html?";
+  let fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
+  gpxFileName.placeholder = fileName;
+
+  routePointsLayer.getSource().forEachFeature(function (feature) {
+    routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
+  });
+  if (routePoints.length > 0) {
+    linkCode += "destinationPoints=" + JSON.stringify(routePoints);
+  }
+
+  poiLayer.getSource().forEachFeature(function (feature) {
+    poiPoints.push([toCoordinateString(feature.getGeometry().getCoordinates()), encodeURI(feature.get("name"))]);
+  });
+  if (poiPoints.length > 0) {
+    linkCode += "&poiPoints=" + JSON.stringify(poiPoints);
+  }
+
+  document.getElementById("linkCodeDiv").innerHTML = linkCode;
+  document.getElementById("navAppButton").setAttribute("href", linkCode);
+
+  qrCodeLink.clear();
+  try {
+    qrCodeLink.makeCode(linkCode);
+  } catch {
+    console.log("qr error")
+  }
 
   document.getElementById("saveFileOkButton").onclick = () => {
     fileName = gpxFileName.value || gpxFileName.placeholder;
@@ -447,8 +485,8 @@ JSON.parse(localStorage.poiString || "[]").forEach(function (element) {
 
 JSON.parse(localStorage.routePoints || "[]").forEach(function (element) {
   routePointsLineString.appendCoordinate(element);
-  routeMe();
 });
+routeMe();
 
 const gpxStyle = {
   Point: new Style({
@@ -603,6 +641,7 @@ function getPixelDistance(pixel, pixel2) {
 }
 
 function switchMap() {
+  layerSelector.value = localStorage.routePlannerMapMode;
   slitlagerkarta.setVisible(false);
   slitlagerkarta_nedtonad.setVisible(false);
   ortofoto.setVisible(false);
@@ -797,8 +836,16 @@ document.addEventListener("keyup", function (event) {
 });
 
 document.addEventListener("keydown", function (event) {
-  if (event.key == "Shift") {
-    addDraw();
+  if (!menuDivcontent.checkVisibility()) {
+    if (event.key == "Backspace") {
+      const newroutePointsLineString = routePointsLineString.getCoordinates();
+      newroutePointsLineString.pop()
+      routePointsLineString.setCoordinates(newroutePointsLineString);
+      routeMe();
+    }
+    if (event.key == "Shift") {
+      addDraw();
+    }
   }
 });
 
@@ -844,6 +891,7 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
   poiPosition = contextPopup.getPosition();
   menuDivcontent.replaceChildren(savePoiNameInput);
   contextPopup.setPosition();
+  poiFileName.select();
   poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
 });
 
