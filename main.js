@@ -166,16 +166,16 @@ document.getElementById("gpxOpacity").addEventListener("change", function () {
 document.getElementById("clearMapButton").addEventListener("click", function () {
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
-  drawLayer.getSource().clear();
-  gpxLayer.getSource().clear();
   localStorage.removeItem("poiString");
   localStorage.removeItem("routePoints");
   localStorage.removeItem("gpxLayer");
-  poiLayer.getSource().clear();
+  routePointsLineString.setCoordinates([]);
   routeLineString.setCoordinates([]);
   routePointsLayer.getSource().clear();
-  routePointsLineStringLayer.getSource().clear();
   voiceHintsLayer.getSource().clear();
+  poiLayer.getSource().clear();
+  gpxLayer.getSource().clear();
+  drawLayer.getSource().clear();
 });
 
 document.getElementById("gpxToRouteButton").addEventListener("click", function () {
