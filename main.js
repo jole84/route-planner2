@@ -53,6 +53,12 @@ document.getElementById("clickFileButton").onclick = function () {
   customFileButton.click();
 }
 
+document.getElementById("mouseClickAdd").addEventListener("change", () => {
+  localStorage.mouseClickAdd = document.getElementById("mouseClickAdd").checked;
+});
+
+document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd);
+
 function getFileFormat(fileExtention) {
   if (fileExtention === "gpx") {
     return new GPX();
@@ -113,10 +119,6 @@ document.getElementById("exportRouteButton").onclick = function () {
     menuDivcontent.replaceChildren();
   }
 }
-
-// document.getElementById("showGPX").onclick = function () {
-//   gpxLayer.setVisible(document.getElementById("showGPX").checked);
-// }
 
 document.getElementById("gpxOpacity").addEventListener("change", function () {
   gpxLayer.setOpacity(parseFloat(document.getElementById("gpxOpacity").value));
@@ -480,11 +482,11 @@ const gpxStyle = {
   }),
   Polygon: new Style({
     stroke: new Stroke({
-      color: [255, 0, 0, 1],
+      color: [0, 0, 255, 1],
       width: 2,
     }),
     fill: new Fill({
-      color: [255, 0, 0, 0.3],
+      color: [0, 0, 255, 0.3],
     }),
   }),
 };
@@ -514,6 +516,7 @@ JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
   const newFeature = new Feature({
     geometry: newGeom(geomType, coordinates),
     name: name,
+    gpxFeature: true,
   });
   gpxLayer.getSource().addFeature(newFeature);
 });
@@ -693,12 +696,10 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
 });
 
 map.addEventListener("click", function (event) {
-  // map.forEachFeatureAtPixel(event.pixel, function (feature) {
-  //   if (feature.get("routePointMarker")) {
-  //     feature.set("straight",  !feature.get("straight"));
-  //   }
-  // });
-  // routeMe();
+  if (event.originalEvent.ctrlKey || JSON.parse(localStorage.mouseClickAdd)) {
+    routePointsLineString.appendCoordinate(event.coordinate);
+    routeMe();
+  }
   contextPopup.setPosition();
 });
 
@@ -712,6 +713,7 @@ map.addEventListener("contextmenu", function (event) {
   document.getElementById("removeDrawing").style.display = "none";
   document.getElementById("reverseRoute").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
+
   map.forEachFeatureAtPixel(event.pixel, function (feature) {
     console.log(feature.getProperties());
     if (feature.get("gpxFeature")) {
