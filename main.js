@@ -62,7 +62,7 @@ document.getElementById("clickFileButton").onclick = function () {
 document.getElementById("mouseClickAdd").addEventListener("change", () => {
   localStorage.mouseClickAdd = document.getElementById("mouseClickAdd").checked;
 });
-document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd || "[]");
+document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd || "false");
 
 function getFileFormat(fileExtention) {
   if (fileExtention === "gpx") {
@@ -736,7 +736,7 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
 });
 
 map.addEventListener("click", function (event) {
-  if (event.originalEvent.ctrlKey || JSON.parse(localStorage.mouseClickAdd)) {
+  if (event.originalEvent.ctrlKey || JSON.parse(localStorage.mouseClickAdd || "false")) {
     routePointsLineString.appendCoordinate(event.coordinate);
     routeMe();
   }
