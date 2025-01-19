@@ -845,6 +845,8 @@ document.addEventListener("keydown", function (event) {
     }
     if (event.key == "Alt") {
       addDraw();
+    } else {
+      map.removeInteraction(draw);
     }
   }
 });
