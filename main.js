@@ -35,8 +35,8 @@ let qrCodeLink = new QRCode("qrRoutePlanner", {
   height: 350,
 });
 
-localStorage.centerCoordinate = localStorage.centerCoordinate || JSON.stringify(defaultCenter);
-localStorage.centerZoom = localStorage.centerZoom || defaultZoom;
+localStorage.centerCoordinate = localStorage.centerCoordinate || "[1700000, 8500000]";
+localStorage.centerZoom = localStorage.centerZoom || 7;
 localStorage.routePlannerMapMode = localStorage.routePlannerMapMode || 0; // default map
 
 document.getElementById("openMenuButton").addEventListener("click", () => {
