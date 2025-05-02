@@ -1,5 +1,5 @@
 import './style.css';
-import {altKeyOnly} from 'ol/events/condition.js';
+import { altKeyOnly } from 'ol/events/condition.js';
 import { Feature, Map, View } from "ol";
 import { Modify } from "ol/interaction.js";
 import { saveAs } from 'file-saver';
@@ -735,25 +735,43 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
   contextPopup.setPosition();
 });
 
-map.addEventListener("click", function (event) {
-  if (event.originalEvent.ctrlKey || JSON.parse(localStorage.mouseClickAdd || "false")) {
+map.addEventListener("contextmenu", function (event) {
+  event.preventDefault();
+  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+  if (closestRoutePoint) {
+    const closestRoutePointId = closestRoutePoint.getId();
+    const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
+    if (distanceToClosestRoutePoint < 40) {
+      routePointsLayer.getSource().removeFeature(closestRoutePoint);
+      const newRoutePoints = [];
+      for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+        if (i === closestRoutePointId) {
+          continue;
+        }
+        newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
+      };
+      routePointsLineString.setCoordinates(newRoutePoints);
+    } else {
+      routePointsLineString.appendCoordinate(event.coordinate);
+    }
+  } else {
     routePointsLineString.appendCoordinate(event.coordinate);
-    routeMe();
   }
-  contextPopup.setPosition();
+
+  routeMe();
 });
 
-contextPopupContent.addEventListener("click", function () {
+contextPopupContent.addEventListener("click", function () { // copy coordinates
   navigator.clipboard.writeText(contextPopupContent.innerHTML);
 });
 
-map.addEventListener("contextmenu", function (event) {
-  event.preventDefault();
+map.addEventListener("click", function (event) {
   document.getElementById("gpxToRouteButton").style.display = "none";
   document.getElementById("removeDrawing").style.display = "none";
   document.getElementById("reverseRoute").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
 
+  let drawingToRemove;
   map.forEachFeatureAtPixel(event.pixel, function (feature) {
     console.log(feature.getProperties());
     if (feature.get("gpxFeature")) {
@@ -763,6 +781,7 @@ map.addEventListener("contextmenu", function (event) {
       document.getElementById("reverseRoute").style.display = "unset";
     }
     if (feature.get("drawing")) {
+      drawingToRemove = feature;
       document.getElementById("removeDrawing").style.display = "unset";
     }
     if (feature.get("routePointMarker")) {
@@ -779,6 +798,11 @@ map.addEventListener("contextmenu", function (event) {
       contextPopup.setPosition();
     }
   });
+
+  document.getElementById("removeDrawing").onclick = function () {
+    drawLayer.getSource().removeFeature(drawingToRemove);
+    contextPopup.setPosition();
+  }
 
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
   if (closestRoutePoint) {
@@ -806,8 +830,14 @@ map.addEventListener("contextmenu", function (event) {
   }
 
   contextPopupContent.innerHTML = toStringXY(toLonLat(event.coordinate).reverse(), 5);
-  contextPopup.setPosition(event.coordinate);
-  contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
+
+  if (contextPopup.getPosition()) {
+    // hide if visible
+    contextPopup.setPosition();
+  } else {
+    contextPopup.setPosition(event.coordinate);
+    contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
+  }
 });
 
 map.on("pointermove", function (evt) {
