@@ -35,6 +35,14 @@ let qrCodeLink = new QRCode("qrRoutePlanner", {
   height: 350,
 });
 
+let routeMode = "car-fast";
+
+document.getElementById("routeModeSelector").addEventListener("change", function (event) {
+  routeMode = document.getElementById("routeModeSelector").value;
+  console.log(routeMode);
+  routeMe();
+});
+
 localStorage.centerCoordinate = localStorage.centerCoordinate || "[1700000, 8500000]";
 localStorage.centerZoom = localStorage.centerZoom || 7;
 localStorage.routePlannerMapMode = localStorage.routePlannerMapMode || 0; // default map
@@ -687,7 +695,7 @@ function routeMe() {
   if (coordsString.length >= 2) {
     const brouterUrl = "https://brouter.de/brouter?lonlats=" +
       coordsString.join("|") +
-      "&profile=car-fast&alternativeidx=0&format=geojson&timode=2&straight=" +
+      "&profile=" + routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
       straightPoints.join(",");
 
     fetch(brouterUrl).then(function (response) {
