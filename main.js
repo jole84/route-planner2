@@ -124,14 +124,14 @@ document.getElementById("exportRouteButton").onclick = function () {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
   });
   if (routePoints.length > 0) {
-    linkCode += "destinationPoints=" + JSON.stringify(routePoints);
+    linkCode += "destinationPoints=" + encodeURIComponent(JSON.stringify(routePoints));
   }
 
   poiLayer.getSource().forEachFeature(function (feature) {
     poiPoints.push([toCoordinateString(feature.getGeometry().getCoordinates()), encodeURI(feature.get("name"))]);
   });
   if (poiPoints.length > 0) {
-    linkCode += "&poiPoints=" + JSON.stringify(poiPoints);
+    linkCode += "&poiPoints=" + encodeURIComponent(JSON.stringify(poiPoints));
   }
 
   document.getElementById("linkCodeDiv").innerHTML = linkCode;
