@@ -125,6 +125,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   });
   if (routePoints.length > 0) {
     linkCode += "destinationPoints=" + encodeURIComponent(JSON.stringify(routePoints));
+    console.log("destinationPoints64=" + btoa(JSON.stringify(routePoints)))
   }
 
   poiLayer.getSource().forEachFeature(function (feature) {
