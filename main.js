@@ -36,11 +36,9 @@ let qrCodeLink = new QRCode("qrRoutePlanner", {
   height: 350,
 });
 
-let routeMode = "car-fast";
-
+document.getElementById("routeModeSelector").value = localStorage.routeMode || "car-fast";
 document.getElementById("routeModeSelector").addEventListener("change", function (event) {
-  routeMode = document.getElementById("routeModeSelector").value;
-  console.log(routeMode);
+  localStorage.routeMode = document.getElementById("routeModeSelector").value;
   routeMe();
 });
 
@@ -68,10 +66,10 @@ document.getElementById("clickFileButton").onclick = function () {
   customFileButton.click();
 }
 
-document.getElementById("mouseClickAdd").addEventListener("change", () => {
-  localStorage.mouseClickAdd = document.getElementById("mouseClickAdd").checked;
-});
-document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd || "false");
+// document.getElementById("mouseClickAdd").addEventListener("change", () => {
+//   localStorage.mouseClickAdd = document.getElementById("mouseClickAdd").checked;
+// });
+// document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd || "false");
 
 function getFileFormat(fileExtention) {
   if (fileExtention === "gpx") {
@@ -126,7 +124,8 @@ document.getElementById("exportRouteButton").onclick = function () {
   });
   if (routePoints.length > 0) {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
-    console.log("https://jole84.se/nav-app/index.html?destinationPoints64=" + btoa(JSON.stringify(routePoints)))
+    console.log("https://jole84.se/nav-app/index.html?destinationPoints64=" + btoa(JSON.stringify(routePoints)));
+    console.log("https://jole84.se/nav-app/index.html?trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])]))));
   }
 
   poiLayer.getSource().forEachFeature(function (feature) {
@@ -710,7 +709,7 @@ function routeMe() {
   if (coordsString.length >= 2) {
     const brouterUrl = "https://brouter.de/brouter?lonlats=" +
       coordsString.join("|") +
-      "&profile=" + routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
+      "&profile=" + localStorage.routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
       straightPoints.join(",");
 
     fetch(brouterUrl).then(function (response) {
