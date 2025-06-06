@@ -17,6 +17,8 @@ import TileWMS from "ol/source/TileWMS.js";
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
 
+const addPositionButton = document.getElementById("addPositionButton");
+const removePositionButton = document.getElementById("removePositionButton");
 const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const helpDiv = document.getElementById("helpDiv");
@@ -135,7 +137,13 @@ document.getElementById("exportRouteButton").onclick = function () {
   }
 
   document.getElementById("linkCodeDiv").innerHTML = linkCode;
+  document.getElementById("linkCodeDiv").title = "Klicka för att kopiera";
   document.getElementById("navAppButton").setAttribute("href", linkCode);
+  document.getElementById("navAppButton").title = linkCode;
+
+  document.getElementById("linkCodeDiv").addEventListener("click", function () {
+    navigator.clipboard.writeText(linkCode);
+  })
 
   qrCodeLink.clear();
   try {
@@ -953,3 +961,23 @@ document.getElementById("removePoiButton").addEventListener("click", function ()
   poiLayer.getSource().removeFeature(closestPoi);
   contextPopup.setPosition();
 });
+
+addPositionButton.addEventListener("click", function (event) {
+  routePointsLineString.appendCoordinate(map.getView().getCenter());
+  routeMe();
+})
+
+removePositionButton.addEventListener("click", function (event) {
+  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(map.getView().getCenter());
+  const closestRoutePointId = closestRoutePoint.getId();
+  routePointsLayer.getSource().removeFeature(closestRoutePoint);
+  const newRoutePoints = [];
+  for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+    if (i === closestRoutePointId) {
+      continue;
+    }
+    newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
+  };
+  routePointsLineString.setCoordinates(newRoutePoints);
+  routeMe();
+})

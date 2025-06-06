@@ -5,10 +5,11 @@ body {
   margin: 0;
   height: 100%;
   font-family: "roboto", sans-serif;
-  background-color: #bfe6ff;
+  background-color: black;
 }
 
 #map {
+  background-color: #bfe6ff;
   position: absolute;
   top: 0;
   bottom: 0;
@@ -21,7 +22,6 @@ body {
   flex-wrap: wrap;
   bottom: 5px;
   left: 5px;
-  right: 5px;
   position: absolute;
   white-space: nowrap;
   justify-content: space-between;
@@ -29,10 +29,36 @@ body {
   gap: 5px;
 }
 
-@media (max-width: 550px) {
-  #lowerLeftGroup {
-    max-width: calc(100% - 10px);
-  }
+#lowerRightGroup {
+  bottom: 5px;
+  right: 5px;
+  position: absolute;
+  display: none;
+  /* display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  white-space: nowrap;
+  justify-content: space-between;
+  max-width: 350px;
+  gap: 5px; */
+}
+
+#crosshair {
+  display: none;
+  pointer-events: none;
+  opacity: 0.5;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  position: absolute;
+  z-index: 10;
+  top: 50%;
+  left: 50%;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 #infoGroup {
@@ -71,15 +97,23 @@ body {
   align-items: center;
 }
 
-#menuDivContent > div {
+#menuDivContent>div {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-/* #linkCodeDiv {
-  max-width: 400px;
-} */
+#linkCodeDiv {
+  /* line-break: anywhere; */
+  padding: 15px 0px 15px 0px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-decoration: underline;
+  color: #e91e63;
+}
 
 #gpxFileName {
   min-width: 15rem;
@@ -150,6 +184,19 @@ kbd {
   text-transform: uppercase;
   /* max-width: fit-content; */
 }
+
+.btn-lg {
+  padding: 1.5rem 1rem;
+  /* font-size: 1.1rem; */
+  /* line-height: 1.5; */
+  border-radius: .3rem;
+}
+
+/* .btn-group-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+} */
 
 .btn:active {
   transform: translateY(2px);
@@ -230,4 +277,30 @@ kbd {
 
 .routeControl:hover {
   background-color: lightgray;
+}
+
+@media (max-width: 550px) {
+  #lowerLeftGroup {
+    max-width: calc(100% - 10px);
+  }
+
+  #lowerLeftGroup {
+    top: 5px;
+    bottom: unset;
+  }
+
+  #infoGroup {
+    top: 150px;
+  }
+}
+
+@media (pointer:coarse) {
+  #crosshair {
+    display: unset;
+  }
+
+  #lowerRightGroup {
+    display: inline;
+  }
+
 }
