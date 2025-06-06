@@ -124,7 +124,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
   });
   if (routePoints.length > 0) {
-    linkCode += "destinationPoints=" + encodeURIComponent(JSON.stringify(routePoints));
+    linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
     console.log("https://jole84.se/nav-app/index.html?destinationPoints64=" + btoa(JSON.stringify(routePoints)))
   }
 
@@ -132,7 +132,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     poiPoints.push([toCoordinateString(feature.getGeometry().getCoordinates()), encodeURI(feature.get("name"))]);
   });
   if (poiPoints.length > 0) {
-    linkCode += "&poiPoints=" + encodeURIComponent(JSON.stringify(poiPoints));
+    linkCode += "&poiPoints64=" + btoa(JSON.stringify(poiPoints));
   }
 
   document.getElementById("linkCodeDiv").innerHTML = linkCode;
