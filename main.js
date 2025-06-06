@@ -8,7 +8,6 @@ import { toLonLat } from "ol/proj.js";
 import { toStringXY } from "ol/coordinate";
 import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
-import Draw from 'ol/interaction/Draw.js';
 import Collection from 'ol/Collection.js';
 import { Polygon, Point, MultiLineString, LineString } from 'ol/geom';
 import OSM from "ol/source/OSM.js";
@@ -594,7 +593,14 @@ const drawLayer = new VectorLayer({
   }),
 });
 
+const newDrawFeature = new Feature({
+  geometry: new LineString([]),
+});
+newDrawFeature.setId(0);
 drawLayer.getSource().addEventListener("change", function () {
+  if (!drawLayer.getSource().getFeatureById(0)) {
+    drawLayer.getSource().addFeature(newDrawFeature)
+  }
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
     feature.set("drawing", true);
@@ -858,19 +864,16 @@ map.on("pointermove", function (evt) {
   }
 });
 
-let draw; // global so we can remove it later
-function addDraw() {
-  draw = new Draw({
-    source: drawLayer.getSource(),
-    type: "LineString",
-    freehandCondition: altKeyOnly,
-  });
-  map.addInteraction(draw);
-}
+document.addEventListener("mouseup", function () {
+  if (newDrawFeature.getGeometry().getCoordinates().length > 0) {
+    drawLayer.getSource().addFeature(newDrawFeature.clone())
+    newDrawFeature.getGeometry().setCoordinates([])
+  }
+});
 
-document.addEventListener("keyup", function (event) {
-  if (event.key == "Alt") {
-    map.removeInteraction(draw);
+map.on("pointerdrag", function (evt) {
+  if (evt.originalEvent.altKey) {
+    newDrawFeature.getGeometry().appendCoordinate(evt.coordinate)
   }
 });
 
@@ -881,11 +884,6 @@ document.addEventListener("keydown", function (event) {
       newroutePointsLineString.pop()
       routePointsLineString.setCoordinates(newroutePointsLineString);
       routeMe();
-    }
-    if (event.key == "Alt") {
-      addDraw();
-    } else {
-      map.removeInteraction(draw);
     }
   }
 });
