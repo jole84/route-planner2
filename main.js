@@ -36,7 +36,7 @@ let qrCodeLink = new QRCode("qrRoutePlanner", {
   height: 350,
 });
 
-document.getElementById("routeModeSelector").value = localStorage.routeMode || "car-fast";
+localStorage.routeMode = document.getElementById("routeModeSelector").value = localStorage.routeMode || "car-fast";
 document.getElementById("routeModeSelector").addEventListener("change", function (event) {
   localStorage.routeMode = document.getElementById("routeModeSelector").value;
   routeMe();
