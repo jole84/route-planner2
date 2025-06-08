@@ -967,16 +967,26 @@ addPositionButton.addEventListener("click", function (event) {
 })
 
 removePositionButton.addEventListener("click", function (event) {
-  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(map.getView().getCenter());
-  const closestRoutePointId = closestRoutePoint.getId();
-  routePointsLayer.getSource().removeFeature(closestRoutePoint);
-  const newRoutePoints = [];
-  for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
-    if (i === closestRoutePointId) {
-      continue;
+  try {
+    const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(map.getView().getCenter());
+    const closestRoutePointDistance = getPixelDistance(
+      map.getPixelFromCoordinate(map.getView().getCenter()),
+      map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates())
+    );
+    const closestRoutePointId = closestRoutePoint.getId();
+    if (closestRoutePointDistance < 40) {
+      routePointsLayer.getSource().removeFeature(closestRoutePoint);
     }
-    newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
-  };
-  routePointsLineString.setCoordinates(newRoutePoints);
-  routeMe();
+    const newRoutePoints = [];
+    for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+      if (i === closestRoutePointId) {
+        continue;
+      }
+      newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
+    };
+    routePointsLineString.setCoordinates(newRoutePoints);
+    routeMe();
+  } catch {
+    console.log("no points found!")
+  }
 })
