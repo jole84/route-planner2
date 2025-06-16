@@ -758,29 +758,31 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
 });
 
 map.addEventListener("contextmenu", function (event) {
-  event.preventDefault();
-  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
-  if (closestRoutePoint) {
-    const closestRoutePointId = closestRoutePoint.getId();
-    const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
-    if (distanceToClosestRoutePoint < 40) {
-      routePointsLayer.getSource().removeFeature(closestRoutePoint);
-      const newRoutePoints = [];
-      for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
-        if (i === closestRoutePointId) {
-          continue;
-        }
-        newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
-      };
-      routePointsLineString.setCoordinates(newRoutePoints);
+  if (!event.originalEvent.altKey) {
+    event.preventDefault();
+    const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+    if (closestRoutePoint) {
+      const closestRoutePointId = closestRoutePoint.getId();
+      const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
+      if (distanceToClosestRoutePoint < 40) {
+        routePointsLayer.getSource().removeFeature(closestRoutePoint);
+        const newRoutePoints = [];
+        for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+          if (i === closestRoutePointId) {
+            continue;
+          }
+          newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
+        };
+        routePointsLineString.setCoordinates(newRoutePoints);
+      } else {
+        routePointsLineString.appendCoordinate(event.coordinate);
+      }
     } else {
       routePointsLineString.appendCoordinate(event.coordinate);
     }
-  } else {
-    routePointsLineString.appendCoordinate(event.coordinate);
-  }
 
-  routeMe();
+    routeMe();
+  }
 });
 
 contextPopupContent.addEventListener("click", function () { // copy coordinates
