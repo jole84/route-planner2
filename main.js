@@ -1,5 +1,4 @@
 import './style.css';
-import { altKeyOnly } from 'ol/events/condition.js';
 import { Feature, Map, View } from "ol";
 import { Modify } from "ol/interaction.js";
 import { saveAs } from 'file-saver';
