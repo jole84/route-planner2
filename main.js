@@ -13,6 +13,7 @@ import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
 import TileWMS from "ol/source/TileWMS.js";
+import {getLength} from 'ol/sphere';
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
 
@@ -630,7 +631,7 @@ drawLayer.getSource().addEventListener("change", function () {
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
     feature.set("drawing", true);
-    feature.set("name", String(Math.round(feature.getGeometry().getLength()) + "m"))
+    feature.set("name", String(Math.round(getLength(feature.getGeometry())) + "m"))
     drawFeatures.push(feature.getGeometry().getCoordinates());
   });
   localStorage.drawFeatures = JSON.stringify(drawFeatures);
@@ -843,11 +844,6 @@ map.addEventListener("click", function (event) {
     }
   });
 
-  document.getElementById("removeDrawing").onclick = function () {
-    drawLayer.getSource().removeFeature(drawingToRemove);
-    contextPopup.setPosition();
-  }
-
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
   if (closestRoutePoint) {
     const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
@@ -902,7 +898,7 @@ document.addEventListener("mouseup", function () {
 
 map.on("pointerdrag", function (evt) {
   if (evt.originalEvent.altKey) {
-    newDrawFeature.getGeometry().appendCoordinate(evt.coordinate)
+    newDrawFeature.getGeometry().appendCoordinate(evt.coordinate);
   }
 });
 
