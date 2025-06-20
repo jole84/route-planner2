@@ -591,12 +591,32 @@ function newGeom(featureType, coordinates) {
 
 const drawLayer = new VectorLayer({
   source: new VectorSource(),
-  style: new Style({
-    stroke: new Stroke({
-      color: [255, 0, 0, 0.5],
-      width: 10,
-    }),
-  }),
+  style: function (feature){
+
+    return new Style({
+      stroke: new Stroke({
+        color: [255, 0, 0, 0.5],
+        width: 10,
+      }),
+      text: new Text({
+        text: feature.get("name"),
+        font: "14px Roboto,monospace",
+        textAlign: "left",
+        offsetX: 10,
+        fill: new Fill({
+          color: "#b41412",
+        }),
+        backgroundFill: new Fill({
+          color: [255, 255, 255, 0.9],
+        }),
+        backgroundStroke: new Stroke({
+          color: [0, 0, 0, 0.9],
+          width: 1.5,
+        }),
+        padding: [2, 1, 0, 2],
+      }),
+    })
+  }
 });
 
 const newDrawFeature = new Feature({
@@ -610,6 +630,7 @@ drawLayer.getSource().addEventListener("change", function () {
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
     feature.set("drawing", true);
+    feature.set("name", String(Math.round(feature.getGeometry().getLength()) + "m"))
     drawFeatures.push(feature.getGeometry().getCoordinates());
   });
   localStorage.drawFeatures = JSON.stringify(drawFeatures);
