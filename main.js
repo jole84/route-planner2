@@ -223,9 +223,6 @@ document.getElementById("gpxOpacity").addEventListener("change", function () {
 document.getElementById("clearMapButton").addEventListener("click", function () {
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
-  localStorage.removeItem("poiString");
-  localStorage.removeItem("routePoints");
-  localStorage.removeItem("gpxLayer");
   routePointsLineString.setCoordinates([]);
   routeLineString.setCoordinates([]);
   routePointsLayer.getSource().clear();
@@ -233,6 +230,10 @@ document.getElementById("clearMapButton").addEventListener("click", function () 
   poiLayer.getSource().clear();
   gpxLayer.getSource().clear();
   drawLayer.getSource().clear();
+  localStorage.removeItem("poiString");
+  localStorage.removeItem("routePoints");
+  localStorage.removeItem("gpxLayer");
+  localStorage.removeItem("drawFeatures");
   document.location.reload();
 });
 
@@ -612,7 +613,6 @@ function newGeom(featureType, coordinates) {
 const drawLayer = new VectorLayer({
   source: new VectorSource(),
   style: function (feature) {
-
     return new Style({
       stroke: new Stroke({
         color: [255, 0, 0, 0.5],
@@ -643,10 +643,8 @@ const newDrawFeature = new Feature({
   geometry: new LineString([]),
 });
 newDrawFeature.setId(0);
+drawLayer.getSource().addFeature(newDrawFeature);
 drawLayer.getSource().addEventListener("change", function () {
-  if (!drawLayer.getSource().getFeatureById(0)) {
-    drawLayer.getSource().addFeature(newDrawFeature)
-  }
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
     feature.set("drawing", true);
