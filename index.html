@@ -97,7 +97,6 @@
         <label for="mouseClickAdd" class="form-check-label">mouseClickAdd</label>
       </div> -->
       <label><input type="range" id="gpxOpacity" value="1" min="0" max="1" step="0.01">GPX genomskinlighet</label>
-      <!-- <button id="gpxToRouteButton" class="btn btn-info">omvandla GPX till rutt</button> -->
     </div>
 
     <!-- helpDiv -->
@@ -142,7 +141,24 @@
       </div>
     </div>
 
-    <input id="customFileButton" type="file" multiple accept=".gpx,application/gpx+xml,.kml,.geojson" />
+    <div id="loadFileDialog">
+      <table>
+        <tr>
+          <td>
+
+            <label class="form-check-label" for="loadRoute">Öppna fil som ny rutt:</label>
+          </td>
+          <td>
+
+            <input class="form-check-input" id="loadRoute" type="checkbox" />
+          </td>
+        </tr>
+      </table>
+      <div class="alignRight">
+        <input id="customFileButton" type="file" multiple accept=".gpx,application/gpx+xml,.kml,.geojson" />
+      </div>
+    </div>
+
 
     <div id="contextPopup">
       <div id="contextPopupCloser" class="alignRight">✖</div>
@@ -160,7 +176,6 @@
           src="https://jole84.se/end-marker.svg"> Ta bort ruttpunkt</div>
       <div class="routeControl invisible" id="removeDrawing">Ta bort markering</div>
       <div class="routeControl invisible" id="reverseRoute">Vänd rutt</div>
-      <div class="routeControl invisible" id="gpxToRouteButton">Omvandla GPX till rutt</div>
     </div>
   </div>
 </body>

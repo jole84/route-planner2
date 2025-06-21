@@ -13,7 +13,7 @@ import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
 import TileWMS from "ol/source/TileWMS.js";
-import {getLength} from 'ol/sphere';
+import { getLength } from 'ol/sphere';
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
 
@@ -25,6 +25,7 @@ const helpDiv = document.getElementById("helpDiv");
 const gpxFileNameInput = document.getElementById("gpxFileNameInput");
 const gpxFileName = document.getElementById("gpxFileName");
 const savePoiNameInput = document.getElementById("savePoiNameInput");
+const loadFileDialog = document.getElementById("loadFileDialog");
 const poiFileName = document.getElementById("poiFileName");
 
 let trackLength = 0;
@@ -63,7 +64,9 @@ document.getElementById("openhelpButton").addEventListener("click", () => {
 });
 
 document.getElementById("clickFileButton").onclick = function () {
-  customFileButton.click();
+  // remove previously loaded gpx files
+  gpxLayer.getSource().clear();
+  menuDivcontent.replaceChildren(loadFileDialog);
 }
 
 // document.getElementById("mouseClickAdd").addEventListener("change", () => {
@@ -83,24 +86,54 @@ function getFileFormat(fileExtention) {
 
 document.getElementById("customFileButton").addEventListener("change", (evt) => {
   console.log(evt)
-  gpxLayer.getSource().clear();
   const files = evt.target.files; // FileList object
-  // remove previously loaded gpx files
-  for (let i = 0; i < files.length; i++) {
-    const reader = new FileReader();
-    reader.readAsText(files[i], "UTF-8");
-    reader.onload = function (evt) {
-      const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
-      const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
-        dataProjection: "EPSG:4326",
-        featureProjection: "EPSG:3857",
-      });
-      gpxFeatures.forEach(function (feature) {
-        feature.set("gpxFeature", true);
-      })
-      gpxLayer.getSource().addFeatures(gpxFeatures);
+  if (document.getElementById("loadRoute").checked) {
+    for (let i = 0; i < files.length; i++) {
+      const reader = new FileReader();
+      reader.readAsText(files[i], "UTF-8");
+      reader.onload = function (evt) {
+        const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
+        const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
+          dataProjection: "EPSG:4326",
+          featureProjection: "EPSG:3857",
+        });
+        gpxFeatures.forEach((element) => {
+          if (element.getGeometry().getType() === "LineString") {
+            element.getGeometry().simplify(500).getCoordinates().reverse().forEach(function (coordinate) {
+              routePointsLineString.appendCoordinate(coordinate);
+            });
+            routeMe();
+          }
+          if (element.getGeometry().getType() === "MultiLineString") {
+            element.getGeometry().simplify(500).getCoordinates()[0].forEach(function (coordinate) {
+              routePointsLineString.appendCoordinate(coordinate);
+            });
+            routeMe();
+          }
+          if (element.getGeometry().getType() === "Point") {
+            addPoi(element.getGeometry().getCoordinates(), element.get("name"));
+          }
+        });
+      }
+    }
+  } else {
+    for (let i = 0; i < files.length; i++) {
+      const reader = new FileReader();
+      reader.readAsText(files[i], "UTF-8");
+      reader.onload = function (evt) {
+        const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
+        const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
+          dataProjection: "EPSG:4326",
+          featureProjection: "EPSG:3857",
+        });
+        gpxFeatures.forEach(function (feature) {
+          feature.set("gpxFeature", true);
+        });
+        gpxLayer.getSource().addFeatures(gpxFeatures);
+      }
     };
   }
+  menuDivcontent.replaceChildren();
 });
 
 function toCoordinateString(coordinate) {
@@ -191,30 +224,7 @@ document.getElementById("clearMapButton").addEventListener("click", function () 
   poiLayer.getSource().clear();
   gpxLayer.getSource().clear();
   drawLayer.getSource().clear();
-});
-
-document.getElementById("gpxToRouteButton").addEventListener("click", function () {
-  // convert loaded gpx track to route
-  routePointsLineString.setCoordinates([]);
-
-  gpxLayer.getSource().forEachFeature(function (element) {
-    if (element.getGeometry().getType() === "LineString") {
-      element.getGeometry().simplify(500).getCoordinates().reverse().forEach(function (coordinate) {
-        routePointsLineString.appendCoordinate(coordinate);
-      });
-      routeMe();
-    }
-    if (element.getGeometry().getType() === "MultiLineString") {
-      element.getGeometry().simplify(500).getCoordinates()[0].forEach(function (coordinate) {
-        routePointsLineString.appendCoordinate(coordinate);
-      });
-      routeMe();
-    }
-    if (element.getGeometry().getType() === "Point") {
-      addPoi(element.getGeometry().getCoordinates(), element.get("name"));
-    }
-  });
-  gpxLayer.getSource().clear();
+  document.location.reload();
 });
 
 document.getElementById("reverseRoute").addEventListener("click", function () {
@@ -592,7 +602,7 @@ function newGeom(featureType, coordinates) {
 
 const drawLayer = new VectorLayer({
   source: new VectorSource(),
-  style: function (feature){
+  style: function (feature) {
 
     return new Style({
       stroke: new Stroke({
@@ -605,7 +615,7 @@ const drawLayer = new VectorLayer({
         textAlign: "left",
         offsetX: 10,
         fill: new Fill({
-          color: "#b41412",
+          color: "black",
         }),
         backgroundFill: new Fill({
           color: [255, 255, 255, 0.9],
@@ -631,11 +641,15 @@ drawLayer.getSource().addEventListener("change", function () {
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
     feature.set("drawing", true);
-    feature.set("name", String(Math.round(getLength(feature.getGeometry())) + "m"))
+    feature.set("name", featureLengthString(getLength(feature.getGeometry())))
     drawFeatures.push(feature.getGeometry().getCoordinates());
   });
   localStorage.drawFeatures = JSON.stringify(drawFeatures);
 });
+
+function featureLengthString(featureLength) {
+  return featureLength > 1000 ? (featureLength / 1000).toFixed(3) + "km" : Math.round(featureLength) + "m";
+}
 
 JSON.parse(localStorage.drawFeatures || "[]").forEach(function (element) {
   drawLayer.getSource().addFeature(new Feature({
@@ -811,7 +825,6 @@ contextPopupContent.addEventListener("click", function () { // copy coordinates
 });
 
 map.addEventListener("click", function (event) {
-  document.getElementById("gpxToRouteButton").style.display = "none";
   document.getElementById("removeDrawing").style.display = "none";
   document.getElementById("reverseRoute").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
@@ -819,9 +832,6 @@ map.addEventListener("click", function (event) {
   let drawingToRemove;
   map.forEachFeatureAtPixel(event.pixel, function (feature) {
     console.log(feature.getProperties());
-    if (feature.get("gpxFeature")) {
-      document.getElementById("gpxToRouteButton").style.display = "unset";
-    }
     if (feature.get("routeLineString")) {
       document.getElementById("reverseRoute").style.display = "unset";
     }
