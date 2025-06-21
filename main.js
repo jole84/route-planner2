@@ -64,8 +64,6 @@ document.getElementById("openhelpButton").addEventListener("click", () => {
 });
 
 document.getElementById("clickFileButton").onclick = function () {
-  // remove previously loaded gpx files
-  gpxLayer.getSource().clear();
   menuDivcontent.replaceChildren(loadFileDialog);
 }
 
@@ -88,6 +86,15 @@ document.getElementById("customFileButton").addEventListener("change", (evt) => 
   console.log(evt)
   const files = evt.target.files; // FileList object
   if (document.getElementById("loadRoute").checked) {
+    document.getElementById("totalTime").innerHTML = "";
+    document.getElementById("trackLength").innerHTML = "";
+    localStorage.removeItem("poiString");
+    localStorage.removeItem("routePoints");
+    routePointsLineString.setCoordinates([]);
+    routeLineString.setCoordinates([]);
+    routePointsLayer.getSource().clear();
+    voiceHintsLayer.getSource().clear();
+    poiLayer.getSource().clear();
     for (let i = 0; i < files.length; i++) {
       const reader = new FileReader();
       reader.readAsText(files[i], "UTF-8");
@@ -117,6 +124,7 @@ document.getElementById("customFileButton").addEventListener("change", (evt) => 
       }
     }
   } else {
+    gpxLayer.getSource().clear();
     for (let i = 0; i < files.length; i++) {
       const reader = new FileReader();
       reader.readAsText(files[i], "UTF-8");
