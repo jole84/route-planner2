@@ -19,6 +19,7 @@ import XYZ from "ol/source/XYZ.js";
 
 const addPositionButton = document.getElementById("addPositionButton");
 const removePositionButton = document.getElementById("removePositionButton");
+const contextPopupButton = document.getElementById("contextPopupButton");
 const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const helpDiv = document.getElementById("helpDiv");
@@ -801,30 +802,32 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
 });
 
 map.addEventListener("contextmenu", function (event) {
-  if (!event.originalEvent.altKey) {
-    event.preventDefault();
-    const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
-    if (closestRoutePoint) {
-      const closestRoutePointId = closestRoutePoint.getId();
-      const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
-      if (distanceToClosestRoutePoint < 40) {
-        routePointsLayer.getSource().removeFeature(closestRoutePoint);
-        const newRoutePoints = [];
-        for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
-          if (i === closestRoutePointId) {
-            continue;
-          }
-          newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
-        };
-        routePointsLineString.setCoordinates(newRoutePoints);
+  if (!window.matchMedia("(pointer: coarse)").matches) {
+    if (!event.originalEvent.altKey) {
+      event.preventDefault();
+      const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+      if (closestRoutePoint) {
+        const closestRoutePointId = closestRoutePoint.getId();
+        const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
+        if (distanceToClosestRoutePoint < 40) {
+          routePointsLayer.getSource().removeFeature(closestRoutePoint);
+          const newRoutePoints = [];
+          for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+            if (i === closestRoutePointId) {
+              continue;
+            }
+            newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
+          };
+          routePointsLineString.setCoordinates(newRoutePoints);
+        } else {
+          routePointsLineString.appendCoordinate(event.coordinate);
+        }
       } else {
         routePointsLineString.appendCoordinate(event.coordinate);
       }
-    } else {
-      routePointsLineString.appendCoordinate(event.coordinate);
+      
+      routeMe();
     }
-
-    routeMe();
   }
 });
 
@@ -832,13 +835,18 @@ contextPopupContent.addEventListener("click", function () { // copy coordinates
   navigator.clipboard.writeText(contextPopupContent.innerHTML);
 });
 
-map.addEventListener("click", function (event) {
+function openContextPopup(coordinate) {
+  const coordinatePixel = map.getPixelFromCoordinate(coordinate);
+  contextPopup.setPosition(coordinate);
+  contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
+
+
   document.getElementById("removeDrawing").style.display = "none";
   document.getElementById("reverseRoute").style.display = "none";
   document.getElementById("flipStraight").style.display = "none";
 
   let drawingToRemove;
-  map.forEachFeatureAtPixel(event.pixel, function (feature) {
+  map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
     console.log(feature.getProperties());
     if (feature.get("routeLineString")) {
       document.getElementById("reverseRoute").style.display = "unset";
@@ -862,9 +870,9 @@ map.addEventListener("click", function (event) {
     }
   });
 
-  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(coordinate);
   if (closestRoutePoint) {
-    const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate))
+    const distanceToClosestRoutePoint = getPixelDistance(map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates()), coordinatePixel)
     if (distanceToClosestRoutePoint < 40) {
       document.getElementById("removeRoutePosition").style.display = "unset";
     } else {
@@ -874,9 +882,9 @@ map.addEventListener("click", function (event) {
     document.getElementById("removeRoutePosition").style.display = "none";
   }
 
-  const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
+  const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(coordinate);
   if (closestPoi) {
-    const distanceToClosestPoi = getPixelDistance(map.getPixelFromCoordinate(closestPoi.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate));
+    const distanceToClosestPoi = getPixelDistance(map.getPixelFromCoordinate(closestPoi.getGeometry().getCoordinates()), coordinatePixel);
     if (distanceToClosestPoi < 40) {
       document.getElementById("removePoiButton").style.display = "unset";
       document.getElementById("removePoiButton").innerHTML = '✖ Ta bort POI "' + closestPoi.get("name") + '"';
@@ -887,14 +895,17 @@ map.addEventListener("click", function (event) {
     document.getElementById("removePoiButton").style.display = "none";
   }
 
-  contextPopupContent.innerHTML = toStringXY(toLonLat(event.coordinate).reverse(), 5);
+  contextPopupContent.innerHTML = toStringXY(toLonLat(coordinate).reverse(), 5);
+}
 
-  if (contextPopup.getPosition()) {
-    // hide if visible
-    contextPopup.setPosition();
-  } else {
-    contextPopup.setPosition(event.coordinate);
-    contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
+map.addEventListener("click", function (event) {
+  if (!window.matchMedia("(pointer: coarse)").matches) {
+    if (contextPopup.getPosition()) {
+      // hide if visible
+      contextPopup.setPosition();
+    } else {
+      openContextPopup(event.coordinate);
+    }
   }
 });
 
@@ -1000,7 +1011,16 @@ document.getElementById("removePoiButton").addEventListener("click", function ()
 addPositionButton.addEventListener("click", function (event) {
   routePointsLineString.appendCoordinate(map.getView().getCenter());
   routeMe();
-})
+});
+
+contextPopupButton.addEventListener("click", function (event) {
+  if (contextPopup.getPosition()) {
+    // hide if visible
+    contextPopup.setPosition();
+  } else {
+    openContextPopup(map.getView().getCenter());
+  }
+});
 
 removePositionButton.addEventListener("click", function (event) {
   try {

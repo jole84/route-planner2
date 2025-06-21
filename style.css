@@ -279,7 +279,7 @@ kbd {
   background-color: lightgray;
 }
 
-@media (max-width: 550px) {
+@media (max-width: 650px) {
   #lowerLeftGroup {
     max-width: calc(100% - 10px);
   }
