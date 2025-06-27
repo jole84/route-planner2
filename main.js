@@ -823,7 +823,7 @@ map.addEventListener("contextmenu", function (event) {
       } else {
         routePointsLineString.appendCoordinate(event.coordinate);
       }
-      
+
       routeMe();
     }
   }
@@ -984,6 +984,10 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
   contextPopup.setPosition();
   poiFileName.select();
   poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
+});
+
+document.getElementById("clearGpxSourceButton").addEventListener("click", function () {
+  gpxLayer.getSource().clear();
 });
 
 document.getElementById("savePoiOkButton").addEventListener("click", function () {

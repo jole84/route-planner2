@@ -142,6 +142,7 @@
       </div>
     </div>
 
+    <!-- load GPX dialog -->
     <div id="loadFileDialog">
       <table>
         <tr>
@@ -155,12 +156,11 @@
           </td>
         </tr>
       </table>
-      <div class="alignRight">
-        <input id="customFileButton" type="file" multiple accept=".gpx,application/gpx+xml,.kml,.geojson" />
-      </div>
+      <button id="clearGpxSourceButton" class="btn btn-danger">rensa Gpx</button>
+      <input id="customFileButton" type="file" multiple accept=".gpx,application/gpx+xml,.kml,.geojson" />
     </div>
 
-
+    <!-- contextPopup dialog -->
     <div id="contextPopup">
       <div id="contextPopupCloser" class="alignRight">✖</div>
       <div title="Kopiera koordinater" class="routeControl" id="contextPopupContent"></div>
