@@ -991,6 +991,10 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
   poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
 });
 
+document.getElementById("clearGpxSourceButton").addEventListener("click", function () {
+  gpxLayer.getSource().clear();
+});
+
 document.getElementById("savePoiOkButton").addEventListener("click", function () {
   addPoi(poiPosition, poiFileName.value || poiFileName.placeholder);
   menuDivcontent.replaceChildren();
