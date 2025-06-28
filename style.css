@@ -104,19 +104,20 @@ body {
 }
 
 .user-select-all {
-  /* line-break: anywhere; */
+  line-break: anywhere;
   padding: 15px 0px 15px 0px;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   text-decoration: underline;
   color: #e91e63;
+  user-select: all;
 }
 
 #qrRoutePlanner{
-  width: 100%;
+  width: -webkit-fill-available;
 }
 
 #gpxFileName {
@@ -125,10 +126,6 @@ body {
 
 .textBox:has(#menuDivContent:empty) {
   display: none;
-}
-
-.user-select-all {
-  user-select: all;
 }
 
 .alignRight {
@@ -234,7 +231,7 @@ kbd {
 .textBox {
   position: absolute;
   background-color: white;
-  max-width: min(calc(100% - 30px), 500px);
+  max-width: min(calc(100% - 30px), 70%);
   max-height: calc(100% - 30px);
   min-width: 5rem;
   color: rgb(32, 32, 32);
