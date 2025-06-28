@@ -34,8 +34,8 @@ let poiPosition;
 let enableVoiceHint = false;
 let qrCodeLink = new QRCode("qrRoutePlanner", {
   text: "https://jole84.se/nav-app/index.html",
-  width: 350,
-  height: 350,
+  // width: 512,
+  // height: 512,
 });
 
 localStorage.routeMode = document.getElementById("routeModeSelector").value = localStorage.routeMode || "car-fast";
@@ -158,6 +158,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   const routePoints = [];
   const poiPoints = [];
   let linkCode = "https://jole84.se/nav-app/index.html?";
+  let trackPointLink = "https://jole84.se/nav-app/index.html?";
   let fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
   gpxFileName.placeholder = fileName;
 
@@ -167,20 +168,24 @@ document.getElementById("exportRouteButton").onclick = function () {
   if (routePoints.length > 0) {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
     console.log("https://jole84.se/nav-app/index.html?destinationPoints64=" + btoa(JSON.stringify(routePoints)));
-    console.log("https://jole84.se/nav-app/index.html?trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])]))));
+    trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
   }
-
+  
   poiLayer.getSource().forEachFeature(function (feature) {
     poiPoints.push([toCoordinateString(feature.getGeometry().getCoordinates()), encodeURI(feature.get("name"))]);
   });
   if (poiPoints.length > 0) {
     linkCode += "&poiPoints64=" + btoa(JSON.stringify(poiPoints));
+    trackPointLink += "&poiPoints64=" + btoa(JSON.stringify(poiPoints));
   }
-
+  
   document.getElementById("linkCodeDiv").innerHTML = linkCode;
   document.getElementById("linkCodeDiv").title = "Klicka för att kopiera";
+  document.getElementById("trackPointLinkDiv").innerHTML = trackPointLink;
   document.getElementById("navAppButton").setAttribute("href", linkCode);
   document.getElementById("navAppButton").title = linkCode;
+  document.getElementById("navAppButton2").setAttribute("href", trackPointLink);
+  document.getElementById("navAppButton2").title = trackPointLink;
 
   document.getElementById("linkCodeDiv").addEventListener("click", function () {
     navigator.clipboard.writeText(linkCode);
@@ -823,7 +828,7 @@ map.addEventListener("contextmenu", function (event) {
       } else {
         routePointsLineString.appendCoordinate(event.coordinate);
       }
-      
+
       routeMe();
     }
   }

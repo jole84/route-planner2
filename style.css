@@ -103,7 +103,7 @@ body {
   gap: 5px;
 }
 
-#linkCodeDiv {
+.user-select-all {
   /* line-break: anywhere; */
   padding: 15px 0px 15px 0px;
   overflow: hidden;
@@ -113,6 +113,10 @@ body {
   -webkit-box-orient: vertical;
   text-decoration: underline;
   color: #e91e63;
+}
+
+#qrRoutePlanner{
+  width: 100%;
 }
 
 #gpxFileName {
