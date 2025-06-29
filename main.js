@@ -755,38 +755,42 @@ function routeMe() {
   });
 
   if (coordsString.length >= 2) {
-    const brouterUrl = "https://brouter.de/brouter?lonlats=" +
-      coordsString.join("|") +
-      "&profile=" + localStorage.routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
-      straightPoints.join(",");
+    if (localStorage.routeMode == "direkt") {
+      routeLineString.setCoordinates(routePointsLineString.getCoordinates());
+    } else {
+      const brouterUrl = "https://brouter.de/brouter?lonlats=" +
+        coordsString.join("|") +
+        "&profile=" + localStorage.routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
+        straightPoints.join(",");
 
-    fetch(brouterUrl).then(function (response) {
-      response.json().then(function (result) {
-        trackLength = result.features[0].properties["track-length"] / 1000; // track-length in km
-        const totalTime = result.features[0].properties["total-time"] * 1000; // track-time in milliseconds
-        document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-        document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-        // add route information to info box
+      fetch(brouterUrl).then(function (response) {
+        response.json().then(function (result) {
+          trackLength = result.features[0].properties["track-length"] / 1000; // track-length in km
+          const totalTime = result.features[0].properties["total-time"] * 1000; // track-time in milliseconds
+          document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+          document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+          // add route information to info box
 
-        routeLineString.setCoordinates(new GeoJSON().readFeature(result.features[0], {
-          dataProjection: "EPSG:4326",
-          featureProjection: "EPSG:3857"
-        }).getGeometry().getCoordinates());
+          routeLineString.setCoordinates(new GeoJSON().readFeature(result.features[0], {
+            dataProjection: "EPSG:4326",
+            featureProjection: "EPSG:3857"
+          }).getGeometry().getCoordinates());
 
-        if (enableVoiceHint) {
+          if (enableVoiceHint) {
 
-          const voicehints = result.features[0].properties.voicehints;
-          const routeGeometryCoordinates = routeLineString.getCoordinates();
-          for (var i = 0; i < voicehints.length; i++) {
-            const marker = new Feature({
-              name: translateVoicehint(voicehints[i]),
-              geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
-            });
-            voiceHintsLayer.getSource().addFeature(marker);
+            const voicehints = result.features[0].properties.voicehints;
+            const routeGeometryCoordinates = routeLineString.getCoordinates();
+            for (var i = 0; i < voicehints.length; i++) {
+              const marker = new Feature({
+                name: translateVoicehint(voicehints[i]),
+                geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
+              });
+              voiceHintsLayer.getSource().addFeature(marker);
+            }
           }
-        }
+        });
       });
-    });
+    }
   } else {
     routeLineString.setCoordinates([]);
   }
