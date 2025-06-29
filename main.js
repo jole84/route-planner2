@@ -194,9 +194,13 @@ document.getElementById("exportRouteButton").onclick = function () {
 
   qrCodeLink.clear();
   try {
-    qrCodeLink.makeCode(linkCode);
+    qrCodeLink.makeCode(trackPointLink);
   } catch {
-    console.log("qr error")
+    try {
+      qrCodeLink.makeCode(linkCode);
+    } catch {
+      console.log("qr error")
+    }
   }
 
   document.getElementById("saveFileOkButton").onclick = () => {
