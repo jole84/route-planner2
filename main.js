@@ -632,7 +632,9 @@ JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
     name: name,
     gpxFeature: true,
   });
-  newFeature.setId(0);
+  if (newFeature.getGeometry().getType() == "LineString" || newFeature.getGeometry().getType() == "MultiLineString") {
+    newFeature.setId(0);
+  }
   gpxLayer.getSource().addFeature(newFeature);
 });
 
