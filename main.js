@@ -97,49 +97,53 @@ document.getElementById("customFileButton").addEventListener("change", (evt) => 
     routePointsLayer.getSource().clear();
     voiceHintsLayer.getSource().clear();
     poiLayer.getSource().clear();
-    for (let i = 0; i < files.length; i++) {
-      const reader = new FileReader();
-      reader.readAsText(files[i], "UTF-8");
-      reader.onload = function (evt) {
-        const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
-        const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
-          dataProjection: "EPSG:4326",
-          featureProjection: "EPSG:3857",
-        });
-        gpxFeatures.forEach((element) => {
-          if (element.getGeometry().getType() === "LineString") {
-            element.getGeometry().simplify(500).getCoordinates().reverse().forEach(function (coordinate) {
-              routePointsLineString.appendCoordinate(coordinate);
-            });
-            routeMe();
-          }
-          if (element.getGeometry().getType() === "MultiLineString") {
-            element.getGeometry().simplify(500).getCoordinates()[0].forEach(function (coordinate) {
-              routePointsLineString.appendCoordinate(coordinate);
-            });
-            routeMe();
-          }
-          if (element.getGeometry().getType() === "Point") {
-            addPoi(element.getGeometry().getCoordinates(), element.get("name"));
-          }
-        });
-      }
+
+    const reader = new FileReader();
+    reader.readAsText(files[0], "UTF-8");
+    reader.onload = function (evt) {
+      const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
+      const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      });
+      gpxFeatures.forEach((element) => {
+        if (element.getGeometry().getType() === "LineString") {
+          element.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
+            routePointsLineString.appendCoordinate(coordinate);
+          });
+          routeMe();
+        }
+        if (element.getGeometry().getType() === "MultiLineString") {
+          element.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
+            routePointsLineString.appendCoordinate(coordinate);
+          });
+          routeMe();
+        }
+        if (element.getGeometry().getType() === "Point") {
+          addPoi(element.getGeometry().getCoordinates(), element.get("name"));
+        }
+      });
     }
   } else {
     gpxLayer.getSource().clear();
+
+    let lineStrings = 0;
     for (let i = 0; i < files.length; i++) {
       const reader = new FileReader();
       reader.readAsText(files[i], "UTF-8");
       reader.onload = function (evt) {
-        const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
+        const fileFormat = getFileFormat(files[i].name.split(".").pop().toLowerCase());
         const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
           dataProjection: "EPSG:4326",
           featureProjection: "EPSG:3857",
         });
         gpxFeatures.forEach(function (feature) {
           feature.set("gpxFeature", true);
+          if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
+            feature.setId(lineStrings++);
+          }
+          gpxLayer.getSource().addFeature(feature);
         });
-        gpxLayer.getSource().addFeatures(gpxFeatures);
       }
     };
   }
@@ -209,7 +213,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     const collection = new Collection();
     collection.extend(poiLayer.getSource().getFeatures());
 
-    if (routeLineString.getCoordinates().length > 0) {
+    if (routeLineString.getGeometry().getLineString()[0].getCoordinates().length > 0) {
       collection.extend(routeLineLayer.getSource().getFeatures());
     }
     if (enableVoiceHint) {
@@ -323,7 +327,7 @@ const osm = new TileLayer({
 });
 
 // vector layers:
-const routeLineString = new LineString([]);
+const routeLineString = new MultiLineString([]);
 const routeLineLayer = new VectorLayer({
   source: new VectorSource({
     features: [new Feature({
@@ -438,10 +442,7 @@ modifyRoutePointsLineString.addEventListener("modifyend", function () {
 
 const voiceHintsLayer = new VectorLayer({
   source: new VectorSource(),
-  style: function (feature) {
-    gpxStyle["Point"].getText().setText(feature.get("name"));
-    return gpxStyle[feature.getGeometry().getType()];
-  },
+  style: gpxStyle,
 });
 
 const allowedTurnType = [2, 4, 5, 7, 13, 14];
@@ -534,55 +535,84 @@ JSON.parse(localStorage.routePoints || "[]").forEach(function (element) {
 });
 routeMe();
 
-const gpxStyle = {
-  Point: new Style({
-    image: new Icon({
-      anchor: [0.5, 1],
-      opacity: 0.85,
-      src: "https://jole84.se/poi-marker-blue.svg",
-    }),
-    text: new Text({
-      font: "14px Roboto,monospace",
-      textAlign: "left",
-      offsetX: 10,
+const multipleColors = [
+  [0, 0, 255, 0.6], // blue standard
+  [255, 0, 0, 0.8], // red
+  [0, 150, 0, 0.8], // green
+  [255, 255, 0, 0.8], // yellow
+  [0, 255, 255, 0.8], // aqua
+]
+
+function gpxStyle(feature) {
+  const featureType = feature.getGeometry().getType();
+  if (featureType == "Point") {
+    return new Style({
+      image: new Icon({
+        anchor: [0.5, 1],
+        src: "https://jole84.se/poi-marker.svg",
+        opacity: 0.8,
+        scale: 0.8,
+      }),
+      text: new Text({
+        text: feature.get("name"),
+        font: "13px B612, sans-serif",
+        placement: "line",
+        textAlign: "left",
+        textBaseline: "bottom",
+        offsetX: 10,
+        fill: new Fill({
+          color: "#b41412",
+        }),
+        backgroundFill: new Fill({
+          color: [255, 255, 255, 0.9],
+        }),
+        backgroundStroke: new Stroke({
+          color: [0, 0, 0, 0.9],
+          width: 1.5,
+        }),
+        padding: [0, 0, 0, 1],
+      }),
+    });
+  }
+
+  if (featureType == "LineString" || featureType == "MultiLineString") {
+    return new Style({
+      stroke: new Stroke({
+        // color: [0, 0, 255, 0.6],
+        color: multipleColors[feature.getId()],
+        width: 10,
+      }),
+    });
+  }
+
+  if (featureType == "Polygon" || featureType == "MultiPolygon") {
+    return new Style({
+      stroke: new Stroke({
+        color: [255, 0, 0, 1],
+        width: 2,
+      }),
       fill: new Fill({
-        color: "blue",
+        color: [255, 0, 0, 0.2],
       }),
-      backgroundFill: new Fill({
-        color: [255, 255, 255, 0.9],
+      text: new Text({
+        text: feature.get("name"),
+        font: "13px B612, sans-serif",
+        overflow: true,
+        fill: new Fill({
+          color: "#b41412",
+        }),
+        stroke: new Stroke({
+          color: "white",
+          width: 4,
+        }),
       }),
-      backgroundStroke: new Stroke({
-        color: [0, 0, 0, 0.9],
-        width: 1.5,
-      }),
-      padding: [2, 1, 0, 2],
-    }),
-  }),
-  LineString: new Style({
-    stroke: new Stroke({
-      color: [0, 0, 255, 0.4],
-      width: 10,
-    }),
-  }),
-  Polygon: new Style({
-    stroke: new Stroke({
-      color: [0, 0, 255, 1],
-      width: 2,
-    }),
-    fill: new Fill({
-      color: [0, 0, 255, 0.3],
-    }),
-  }),
-};
-gpxStyle["MultiLineString"] = gpxStyle["LineString"];
-gpxStyle["MultiPolygon"] = gpxStyle["Polygon"];
+    });
+  }
+}
 
 const gpxLayer = new VectorLayer({
   source: new VectorSource(),
-  style: function (feature) {
-    gpxStyle["Point"].getText().setText(feature.get("name"));
-    return gpxStyle[feature.getGeometry().getType()];
-  },
+  style: gpxStyle,
 });
 
 gpxLayer.getSource().addEventListener("change", function () {
@@ -602,6 +632,7 @@ JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
     name: name,
     gpxFeature: true,
   });
+  newFeature.setId(0);
   gpxLayer.getSource().addFeature(newFeature);
 });
 
@@ -760,7 +791,7 @@ function routeMe() {
 
   if (coordsString.length >= 2) {
     if (localStorage.routeMode == "direkt") {
-      routeLineString.setCoordinates(routePointsLineString.getCoordinates());
+      routeLineString.setCoordinates([routePointsLineString.getCoordinates()]);
     } else {
       const brouterUrl = "https://brouter.de/brouter?lonlats=" +
         coordsString.join("|") +
@@ -775,15 +806,15 @@ function routeMe() {
           document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
           // add route information to info box
 
-          routeLineString.setCoordinates(new GeoJSON().readFeature(result.features[0], {
+          routeLineString.setCoordinates([new GeoJSON().readFeature(result.features[0], {
             dataProjection: "EPSG:4326",
             featureProjection: "EPSG:3857"
-          }).getGeometry().getCoordinates());
+          }).getGeometry().getCoordinates()]);
 
           if (enableVoiceHint) {
 
             const voicehints = result.features[0].properties.voicehints;
-            const routeGeometryCoordinates = routeLineString.getCoordinates();
+            const routeGeometryCoordinates = routeLineString.getCoordinates()[0];
             for (var i = 0; i < voicehints.length; i++) {
               const marker = new Feature({
                 name: translateVoicehint(voicehints[i]),
