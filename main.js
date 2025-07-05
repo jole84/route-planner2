@@ -87,7 +87,7 @@ function getFileFormat(fileExtention) {
 document.getElementById("customFileButton").addEventListener("change", (evt) => {
   console.log(evt)
   const files = evt.target.files; // FileList object
-  if (document.getElementById("loadRoute").checked) {
+  if (document.getElementById("loadRoute").checked) { // fix this!
     document.getElementById("totalTime").innerHTML = "";
     document.getElementById("trackLength").innerHTML = "";
     localStorage.removeItem("poiString");
@@ -101,23 +101,37 @@ document.getElementById("customFileButton").addEventListener("change", (evt) => 
     const reader = new FileReader();
     reader.readAsText(files[0], "UTF-8");
     reader.onload = function (evt) {
+      const loadedProject = files[0].name.startsWith("Projekt_");
       const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
       const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
         dataProjection: "EPSG:4326",
         featureProjection: "EPSG:3857",
       });
       gpxFeatures.forEach((element) => {
-        if (element.getGeometry().getType() === "LineString") {
-          element.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
-            routePointsLineString.appendCoordinate(coordinate);
-          });
-          routeMe();
-        }
-        if (element.getGeometry().getType() === "MultiLineString") {
-          element.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
-            routePointsLineString.appendCoordinate(coordinate);
-          });
-          routeMe();
+        if (loadedProject) {
+
+          if (element.get("routePointsLineString")) {
+            element.getGeometry().getCoordinates().forEach(function (coordinate) {
+              routePointsLineString.appendCoordinate(coordinate);
+            });
+            routeMe();
+          }
+          if (element.get("drawing")) {
+            drawLayer.getSource().addFeature(element);
+          }
+        } else {
+          if (element.getGeometry().getType() === "LineString") {
+            element.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
+              routePointsLineString.appendCoordinate(coordinate);
+            });
+            routeMe();
+          }
+          if (element.getGeometry().getType() === "MultiLineString") {
+            element.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
+              routePointsLineString.appendCoordinate(coordinate);
+            });
+            routeMe();
+          }
         }
         if (element.getGeometry().getType() === "Point") {
           addPoi(element.getGeometry().getCoordinates(), element.get("name"));
@@ -208,7 +222,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   }
 
   document.getElementById("saveFileOkButton").onclick = () => {
-    fileName = gpxFileName.value || gpxFileName.placeholder;
+    const fileName = gpxFileName.value || gpxFileName.placeholder;
     const fileFormat = new GPX();
     const collection = new Collection();
     collection.extend(poiLayer.getSource().getFeatures());
@@ -228,6 +242,25 @@ document.getElementById("exportRouteButton").onclick = function () {
     saveAs(blob, fileName + ".gpx");
     menuDivcontent.replaceChildren();
   }
+}
+
+document.getElementById("saveGeoJsonButton").onclick = () => {
+  const fileName = "Projekt_" + new Date().toLocaleString().replaceAll(" ", "_");
+  const fileFormat = new GeoJSON();
+  const collection = new Collection();
+
+  collection.extend(poiLayer.getSource().getFeatures());
+  collection.extend(routePointsLineStringLayer.getSource().getFeatures());
+  collection.extend(drawLayer.getSource().getFeatures());
+
+  const geoJsonFile = fileFormat.writeFeatures(collection.getArray(), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+    decimals: 5,
+  });
+  const blob = new Blob([geoJsonFile], { type: "application/json" });
+  saveAs(blob, fileName + ".geojson");
+  menuDivcontent.replaceChildren();
 }
 
 document.getElementById("gpxOpacity").addEventListener("change", function () {
@@ -400,7 +433,7 @@ const routePointsLineStringLayer = new VectorLayer({
   source: new VectorSource({
     features: [new Feature({
       geometry: routePointsLineString,
-      routeLineString: true,
+      routePointsLineString: true,
     })],
   }),
   style: function (feature) {
@@ -893,7 +926,7 @@ function openContextPopup(coordinate) {
   let drawingToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
     console.log(feature.getProperties());
-    if (feature.get("routeLineString")) {
+    if (feature.get("routeLineString") || feature.get("routePointsLineString")) {
       document.getElementById("reverseRoute").style.display = "unset";
     }
     if (feature.get("drawing")) {
