@@ -114,10 +114,10 @@
 
     <!-- gpxFileNameInput -->
     <div id="gpxFileNameInput">
-      Ange filnamn:
+      <!-- Ange filnamn: -->
       <div>
         <div class="alignRight">
-          <input class="form-control" id="gpxFileName" type="text" />
+          <!-- <input class="form-control" id="gpxFileName" type="text" /> -->
           <button id="saveFileOkButton" class="btn btn-success">spara som .gpx</button>
           <button id="saveGeoJsonButton" class="btn btn-warning">spara projekt som .geojson</button>
         </div>
@@ -164,8 +164,8 @@
           </td>
         </tr>
       </table>
-      <button id="clearGpxSourceButton" class="btn btn-danger">rensa Gpx</button>
-      <input id="customFileButton" type="file" multiple accept=".gpx,application/gpx+xml,.kml,.geojson" />
+      <!-- <input id="customFileButton" type="file" multiple accept=".gpx,application/gpx+xml,.kml,.geojson" /> -->
+      <button id="selectFileButton" class="btn btn-primary">öppna fil</button>
     </div>
 
     <!-- contextPopup dialog -->
@@ -184,6 +184,7 @@
       <div class="routeControl invisible" id="removeRoutePosition"><img height="15rem"
           src="https://jole84.se/end-marker.svg"> Ta bort ruttpunkt</div>
       <div class="routeControl invisible" id="removeDrawing">Ta bort markering</div>
+      <div class="routeControl invisible" id="removeGpxFeature">Ta bort GPX</div>
       <div class="routeControl invisible" id="reverseRoute">Vänd rutt</div>
     </div>
   </div>

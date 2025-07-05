@@ -1,7 +1,7 @@
 import './style.css';
 import { Feature, Map, View } from "ol";
 import { Modify } from "ol/interaction.js";
-import { saveAs } from 'file-saver';
+// import { saveAs } from 'file-saver';
 import { Stroke, Style, Icon, Fill, Text } from "ol/style.js";
 import { toLonLat } from "ol/proj.js";
 import { toStringXY } from "ol/coordinate";
@@ -24,7 +24,7 @@ const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const helpDiv = document.getElementById("helpDiv");
 const gpxFileNameInput = document.getElementById("gpxFileNameInput");
-const gpxFileName = document.getElementById("gpxFileName");
+// const gpxFileName = document.getElementById("gpxFileName");
 const savePoiNameInput = document.getElementById("savePoiNameInput");
 const loadFileDialog = document.getElementById("loadFileDialog");
 const poiFileName = document.getElementById("poiFileName");
@@ -88,90 +88,100 @@ function getFileFormat(fileExtention) {
 if ("launchQueue" in window) {
   launchQueue.setConsumer(async (launchParams) => {
     for (const file of launchParams.files) {
-      const f = await file.getFile();
-      const reader = new FileReader();
-      const fileExtention = f.name.replace(".gpx.txt", ".gpx").split(".").pop().toLowerCase();
-      const fileFormat = getFileFormat(fileExtention);
-      reader.readAsText(f, "UTF-8");
-      reader.onload = function (evt) {
-        const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
-          dataProjection: "EPSG:4326",
-          featureProjection: "EPSG:3857",
-        });
-        for (let i = 0; i < gpxFeatures.length; i++) {
-          gpxSource.addFeature(gpxFeatures[i]);
-        }
-      };
+      const fileData = await file.getFile();
+      fileLoader(fileData);
     }
   });
 }
 
-document.getElementById("customFileButton").addEventListener("change", evt => {
-  const files = evt.target.files; // FileList object
-  const loadAsRoute = document.getElementById("loadRoute").checked;
-  let lineStringId = 0;
-  // document.getElementById("totalTime").innerHTML = "";
-  // document.getElementById("trackLength").innerHTML = "";
-  // localStorage.removeItem("poiString");
-  // localStorage.removeItem("routePoints");
-  // localStorage.removeItem("drawFeatures");
-  // routePointsLineString.setCoordinates([]);
-  // routeLineString.setCoordinates([]);
-  // routePointsLayer.getSource().clear();
-  // voiceHintsLayer.getSource().clear();
-  // poiLayer.getSource().clear();
-  // gpxLayer.getSource().clear();
+const pickerOpts = {
+  types: [
+    {
+      // description: "Images",
+      accept: {
+        "application/*": [".gpx", ".gpx.txt", ".geojson", ".kml"],
+      },
+    },
+  ],
+  excludeAcceptAllOption: true,
+  multiple: true,
+};
 
-  for (let i = 0; i < files.length; i++) {
-    const loadAsProject = files[i].name.startsWith("Projekt_");
-    const reader = new FileReader();
-    reader.readAsText(files[i], "UTF-8");
-    reader.onload = function (evt) {
-      const fileFormat = getFileFormat(files[i].name.split(".").pop().toLowerCase());
-      const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
-        dataProjection: "EPSG:4326",
-        featureProjection: "EPSG:3857",
-      });
-      gpxFeatures.forEach(feature => {
-        if (loadAsProject || loadAsRoute) {
-          if (feature.getGeometry().getType() === "Point") {
-            addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
-          }
-          if (feature.get("drawing")) {
-            drawLayer.getSource().addFeature(feature);
-          } else if (feature.get("routePointsLineString")) {
-            feature.getGeometry().getCoordinates().forEach(function (coordinate) {
+async function getTheFile() {
+  // Open file picker and destructure the result the first handle
+  const fileHandle = await window.showOpenFilePicker(pickerOpts);
+  // get file contents
+
+  for (let i = 0; i < fileHandle.length; i++) {
+    const fileData = await fileHandle[i].getFile();
+    fileLoader(fileData);
+  }
+  console.log(fileHandle)
+}
+
+
+document.getElementById("selectFileButton").addEventListener("click", evt => {
+  getTheFile();
+  // menuDivcontent.replaceChildren();
+});
+
+// document.getElementById("customFileButton").addEventListener("change", evt => {
+//   const files = evt.target.files; // FileList object
+//   for (let i = 0; i < files.length; i++) {
+//     fileLoader(files[i]);
+//   }
+// menuDivcontent.replaceChildren();
+// });
+
+function fileLoader(fileData) {
+  const loadAsProject = fileData.name.startsWith("Projekt_");
+  const loadAsRoute = document.getElementById("loadRoute").checked;
+  const reader = new FileReader();
+  reader.readAsText(fileData, "UTF-8");
+  reader.onload = function (evt) {
+    const fileFormat = getFileFormat(fileData.name.split(".").pop().toLowerCase());
+    const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857",
+    });
+    gpxFeatures.forEach(feature => {
+      if (loadAsProject || loadAsRoute) {
+        if (feature.getGeometry().getType() === "Point") {
+          addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
+        }
+        if (feature.get("drawing")) {
+          drawLayer.getSource().addFeature(feature);
+        } else if (feature.get("routePointsLineString")) {
+          feature.getGeometry().getCoordinates().forEach(function (coordinate) {
+            routePointsLineString.appendCoordinate(coordinate);
+          });
+        } else {
+          if (feature.getGeometry().getType() === "LineString") {
+            feature.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
               routePointsLineString.appendCoordinate(coordinate);
             });
-          } else {
-            if (feature.getGeometry().getType() === "LineString") {
-              feature.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
-                routePointsLineString.appendCoordinate(coordinate);
-              });
-            }
-            if (feature.getGeometry().getType() === "MultiLineString") {
-              feature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
-                routePointsLineString.appendCoordinate(coordinate);
-              });
-            }
           }
-          routeMe();
-        } else {
-          if (feature.getGeometry().getType() === "Point") {
-            addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
-          } else {
-            if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
-              feature.setId(lineStringId++);
-            }
-            gpxLayer.getSource().addFeature(feature);
+          if (feature.getGeometry().getType() === "MultiLineString") {
+            feature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
+              routePointsLineString.appendCoordinate(coordinate);
+            });
           }
-          feature.set("gpxFeature", true);
         }
-      });
-    }
+        routeMe();
+      } else {
+        if (feature.getGeometry().getType() === "Point") {
+          addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
+        } else {
+          if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
+            feature.setId(lineStringId++);
+          }
+          gpxLayer.getSource().addFeature(feature);
+        }
+        feature.set("gpxFeature", true);
+      }
+    });
   }
-  menuDivcontent.replaceChildren();
-});
+}
 
 function toCoordinateString(coordinate) {
   if (coordinate[1] > 100) {
@@ -188,7 +198,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   let linkCode = "https://jole84.se/nav-app/index.html?";
   let trackPointLink = "https://jole84.se/nav-app/index.html?";
   let fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
-  gpxFileName.placeholder = fileName;
+  // gpxFileName.placeholder = fileName;
 
   routePointsLayer.getSource().forEachFeature(function (feature) {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
@@ -226,7 +236,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   }
 
   document.getElementById("saveFileOkButton").onclick = () => {
-    const fileName = gpxFileName.value || gpxFileName.placeholder;
+    // const fileName = gpxFileName.value || gpxFileName.placeholder;
     const fileFormat = new GPX();
     const collection = new Collection();
     collection.extend(poiLayer.getSource().getFeatures());
@@ -242,14 +252,29 @@ document.getElementById("exportRouteButton").onclick = function () {
       featureProjection: "EPSG:3857",
       decimals: 5,
     });
-    const blob = new Blob([gpxFile], { type: "application/gpx+xml" })
-    saveAs(blob, fileName + ".gpx");
+    const blob = new Blob([gpxFile], { type: "application/gpx+xml" });
+    // saveAs(blob, fileName + ".gpx");
+    saveFile(blob, fileName + ".gpx");
     menuDivcontent.replaceChildren();
   }
 }
 
+async function saveFile(data, fileName) {
+  // create a new handle
+  const newHandle = await window.showSaveFilePicker({ suggestedName: fileName });
+
+  // create a FileSystemWritableFileStream to write to
+  const writableStream = await newHandle.createWritable();
+
+  // write our file
+  await writableStream.write(data);
+
+  // close the file and write the contents to disk.
+  await writableStream.close();
+}
+
 document.getElementById("saveGeoJsonButton").onclick = () => {
-  const fileName = "Projekt_" + (gpxFileName.value.replaceAll(" ", "_") || new Date().toLocaleString().replaceAll(" ", "_"));
+  const fileName = "Projekt_" + new Date().toLocaleString().replaceAll(" ", "_");
   const fileFormat = new GeoJSON();
   const collection = new Collection();
 
@@ -263,7 +288,8 @@ document.getElementById("saveGeoJsonButton").onclick = () => {
     decimals: 5,
   });
   const blob = new Blob([geoJsonFile], { type: "application/json" });
-  saveAs(blob, fileName + ".geojson");
+  // saveAs(blob, fileName + ".geojson");
+  saveFile(blob, fileName + ".geojson");
   menuDivcontent.replaceChildren();
 }
 
@@ -652,6 +678,7 @@ const gpxLayer = new VectorLayer({
   style: gpxStyle,
 });
 
+let lineStringId = 0;
 gpxLayer.getSource().addEventListener("change", function () {
   const poiString = [];
   gpxLayer.getSource().forEachFeature(function (feature) {
@@ -941,6 +968,9 @@ function openContextPopup(coordinate) {
       document.getElementById("flipStraight").innerHTML = feature.get("straight") ? "rak" : "böj";
       document.getElementById("flipStraight").style.display = "unset";
     }
+    if (feature.get("gpxFeature")) {
+      document.getElementById("removeGpxFeature").style.display = "unset";
+    }
     document.getElementById("flipStraight").onclick = function () {
       feature.set("straight", !feature.get("straight"));
       document.getElementById("flipStraight").innerHTML = feature.get("straight") ? "rak" : "böj";
@@ -948,6 +978,10 @@ function openContextPopup(coordinate) {
     }
     document.getElementById("removeDrawing").onclick = function () {
       drawLayer.getSource().removeFeature(feature);
+      contextPopup.setPosition();
+    }
+      document.getElementById("removeGpxFeature").onclick = function () {
+      gpxLayer.getSource().removeFeature(feature);
       contextPopup.setPosition();
     }
   });
@@ -1068,10 +1102,6 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
   contextPopup.setPosition();
   poiFileName.select();
   poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
-});
-
-document.getElementById("clearGpxSourceButton").addEventListener("click", function () {
-  gpxLayer.getSource().clear();
 });
 
 document.getElementById("savePoiOkButton").addEventListener("click", function () {
