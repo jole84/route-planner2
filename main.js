@@ -203,7 +203,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   routePointsLayer.getSource().forEachFeature(function (feature) {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
   });
-  if (routePoints.length > 0) {
+  if (routePoints.length > 1) {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
     trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.getLineString(0).simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
   }
@@ -241,7 +241,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     const collection = new Collection();
     collection.extend(poiLayer.getSource().getFeatures());
 
-    if (routeLineString.getLineString(0).getCoordinates().length > 0) {
+    if (routeLineString.getCoordinates().length > 0) {
       collection.extend(routeLineLayer.getSource().getFeatures());
     }
     if (enableVoiceHint) {
