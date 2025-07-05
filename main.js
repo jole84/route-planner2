@@ -35,8 +35,8 @@ let enableVoiceHint = false;
 let qrCodeLink = new QRCode("qrRoutePlanner", {
   text: "https://jole84.se/nav-app/index.html",
   correctLevel: QRCode.CorrectLevel.M,
-  width: 512,
-  height: 512,
+  // width: 512,
+  // height: 512,
 });
 
 localStorage.routeMode = document.getElementById("routeModeSelector").value = localStorage.routeMode || "car-fast";
@@ -186,7 +186,6 @@ document.getElementById("exportRouteButton").onclick = function () {
   });
   if (routePoints.length > 0) {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
-    console.log("https://jole84.se/nav-app/index.html?destinationPoints64=" + btoa(JSON.stringify(routePoints)));
     trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
   }
 
@@ -212,13 +211,9 @@ document.getElementById("exportRouteButton").onclick = function () {
 
   qrCodeLink.clear();
   try {
-    qrCodeLink.makeCode(trackPointLink);
+    qrCodeLink.makeCode(linkCode);
   } catch {
-    try {
-      qrCodeLink.makeCode(linkCode);
-    } catch {
-      console.log("qr error")
-    }
+    console.log("qr error")
   }
 
   document.getElementById("saveFileOkButton").onclick = () => {
