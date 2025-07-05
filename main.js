@@ -84,6 +84,28 @@ function getFileFormat(fileExtention) {
   }
 }
 
+// PWA file browser file handler
+if ("launchQueue" in window) {
+  launchQueue.setConsumer(async (launchParams) => {
+    for (const file of launchParams.files) {
+      const f = await file.getFile();
+      const reader = new FileReader();
+      const fileExtention = f.name.replace(".gpx.txt", ".gpx").split(".").pop().toLowerCase();
+      const fileFormat = getFileFormat(fileExtention);
+      reader.readAsText(f, "UTF-8");
+      reader.onload = function (evt) {
+        const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
+          dataProjection: "EPSG:4326",
+          featureProjection: "EPSG:3857",
+        });
+        for (let i = 0; i < gpxFeatures.length; i++) {
+          gpxSource.addFeature(gpxFeatures[i]);
+        }
+      };
+    }
+  });
+}
+
 document.getElementById("customFileButton").addEventListener("change", evt => {
   const files = evt.target.files; // FileList object
   const loadAsRoute = document.getElementById("loadRoute").checked;

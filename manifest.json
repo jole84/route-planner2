@@ -1,0 +1,55 @@
+{
+    "name": "Jole84 Ruttplanerare 2.0",
+    "start_url": "https://jole84.se/route-planner2/index.html",
+    "display": "standalone",
+    "description": "Jole84 Ruttplanerare för mobil och desktop",
+    "background_color": "white",
+    "theme_color": "black",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "https://jole84.se/84.svg",
+            "type": "image/svg",
+            "sizes": "any",
+            "purpose": "any"
+        },
+        {
+            "src": "https://jole84.se/84.png",
+            "type": "image/png",
+            "sizes": "any",
+            "purpose": "any"
+        },
+        {
+            "src": "https://jole84.se/84.svg",
+            "type": "image/svg",
+            "sizes": "567x567",
+            "purpose": "any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "https://jole84.se/jole84_nav-app_narrow.png",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "sizes": "1442x3202",
+            "label": "Jole84 nav-app screenshot narrow"
+        },
+        {
+            "src": "https://jole84.se/jole84_nav-app_wide.png",
+            "type": "image/png",
+            "form_factor": "wide",
+            "sizes": "3203x1442",
+            "label": "Jole84 nav-app screenshot wide"
+        }
+    ],
+    "file_handlers": [
+        {
+            "action": "https://jole84.se/route-planner2/index.html",
+            "accept": {
+                "application/gpx": [".gpx"],
+                "application/kml": [".kml"],
+                "application/geojson": [".geojson"]
+            }
+        }
+    ]
+}
