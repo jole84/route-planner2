@@ -249,7 +249,7 @@ document.getElementById("exportRouteButton").onclick = function () {
 }
 
 document.getElementById("saveGeoJsonButton").onclick = () => {
-  const fileName = "Projekt_" + (gpxFileName.value || new Date().toLocaleString().replaceAll(" ", "_"));
+  const fileName = "Projekt_" + (gpxFileName.value.replaceAll(" ", "_") || new Date().toLocaleString().replaceAll(" ", "_"));
   const fileFormat = new GeoJSON();
   const collection = new Collection();
 
