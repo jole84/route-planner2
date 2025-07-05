@@ -84,82 +84,69 @@ function getFileFormat(fileExtention) {
   }
 }
 
-document.getElementById("customFileButton").addEventListener("change", (evt) => {
-  console.log(evt)
+document.getElementById("customFileButton").addEventListener("change", evt => {
   const files = evt.target.files; // FileList object
-  if (document.getElementById("loadRoute").checked) { // fix this!
-    document.getElementById("totalTime").innerHTML = "";
-    document.getElementById("trackLength").innerHTML = "";
-    localStorage.removeItem("poiString");
-    localStorage.removeItem("routePoints");
-    routePointsLineString.setCoordinates([]);
-    routeLineString.setCoordinates([]);
-    routePointsLayer.getSource().clear();
-    voiceHintsLayer.getSource().clear();
-    poiLayer.getSource().clear();
+  const loadAsRoute = document.getElementById("loadRoute").checked;
+  let lineStringId = 0;
+  // document.getElementById("totalTime").innerHTML = "";
+  // document.getElementById("trackLength").innerHTML = "";
+  // localStorage.removeItem("poiString");
+  // localStorage.removeItem("routePoints");
+  // localStorage.removeItem("drawFeatures");
+  // routePointsLineString.setCoordinates([]);
+  // routeLineString.setCoordinates([]);
+  // routePointsLayer.getSource().clear();
+  // voiceHintsLayer.getSource().clear();
+  // poiLayer.getSource().clear();
+  // gpxLayer.getSource().clear();
 
+  for (let i = 0; i < files.length; i++) {
+    const loadAsProject = files[i].name.startsWith("Projekt_");
     const reader = new FileReader();
-    reader.readAsText(files[0], "UTF-8");
+    reader.readAsText(files[i], "UTF-8");
     reader.onload = function (evt) {
-      const loadedProject = files[0].name.startsWith("Projekt_");
-      const fileFormat = getFileFormat(files[0].name.split(".").pop().toLowerCase());
+      const fileFormat = getFileFormat(files[i].name.split(".").pop().toLowerCase());
       const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
         dataProjection: "EPSG:4326",
         featureProjection: "EPSG:3857",
       });
-      gpxFeatures.forEach((element) => {
-        if (loadedProject) {
-
-          if (element.get("routePointsLineString")) {
-            element.getGeometry().getCoordinates().forEach(function (coordinate) {
+      gpxFeatures.forEach(feature => {
+        if (loadAsProject || loadAsRoute) {
+          if (feature.getGeometry().getType() === "Point") {
+            addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
+          }
+          if (feature.get("drawing")) {
+            drawLayer.getSource().addFeature(feature);
+          } else if (feature.get("routePointsLineString")) {
+            feature.getGeometry().getCoordinates().forEach(function (coordinate) {
               routePointsLineString.appendCoordinate(coordinate);
             });
-            routeMe();
+          } else {
+            if (feature.getGeometry().getType() === "LineString") {
+              feature.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
+                routePointsLineString.appendCoordinate(coordinate);
+              });
+            }
+            if (feature.getGeometry().getType() === "MultiLineString") {
+              feature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
+                routePointsLineString.appendCoordinate(coordinate);
+              });
+            }
           }
-          if (element.get("drawing")) {
-            drawLayer.getSource().addFeature(element);
-          }
+          routeMe();
         } else {
-          if (element.getGeometry().getType() === "LineString") {
-            element.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
-              routePointsLineString.appendCoordinate(coordinate);
-            });
-            routeMe();
+          if (feature.getGeometry().getType() === "Point") {
+            addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
+          } else {
+            if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
+              feature.setId(lineStringId++);
+            }
+            gpxLayer.getSource().addFeature(feature);
           }
-          if (element.getGeometry().getType() === "MultiLineString") {
-            element.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
-              routePointsLineString.appendCoordinate(coordinate);
-            });
-            routeMe();
-          }
-        }
-        if (element.getGeometry().getType() === "Point") {
-          addPoi(element.getGeometry().getCoordinates(), element.get("name"));
+          feature.set("gpxFeature", true);
         }
       });
     }
-  } else {
-    gpxLayer.getSource().clear();
-
-    let lineStrings = 0;
-    for (let i = 0; i < files.length; i++) {
-      const reader = new FileReader();
-      reader.readAsText(files[i], "UTF-8");
-      reader.onload = function (evt) {
-        const fileFormat = getFileFormat(files[i].name.split(".").pop().toLowerCase());
-        const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
-          dataProjection: "EPSG:4326",
-          featureProjection: "EPSG:3857",
-        });
-        gpxFeatures.forEach(function (feature) {
-          feature.set("gpxFeature", true);
-          if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
-            feature.setId(lineStrings++);
-          }
-          gpxLayer.getSource().addFeature(feature);
-        });
-      }
-    };
   }
   menuDivcontent.replaceChildren();
 });
@@ -240,7 +227,7 @@ document.getElementById("exportRouteButton").onclick = function () {
 }
 
 document.getElementById("saveGeoJsonButton").onclick = () => {
-  const fileName = "Projekt_" + new Date().toLocaleString().replaceAll(" ", "_");
+  const fileName = "Projekt_" + (gpxFileName.value || new Date().toLocaleString().replaceAll(" ", "_"));
   const fileFormat = new GeoJSON();
   const collection = new Collection();
 
