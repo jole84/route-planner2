@@ -186,7 +186,7 @@ document.getElementById("exportRouteButton").onclick = function () {
   });
   if (routePoints.length > 0) {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
-    trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
+    trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.getLineString(0).simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
   }
 
   poiLayer.getSource().forEachFeature(function (feature) {
