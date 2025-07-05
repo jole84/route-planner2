@@ -131,6 +131,7 @@ body {
 
 .alignRight {
   margin-left: auto;
+  margin-bottom: 5px;
 }
 
 .form-check-input[type=checkbox] {
