@@ -213,7 +213,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     const collection = new Collection();
     collection.extend(poiLayer.getSource().getFeatures());
 
-    if (routeLineString.getGeometry().getLineString()[0].getCoordinates().length > 0) {
+    if (routeLineString.getLineString(0).getCoordinates().length > 0) {
       collection.extend(routeLineLayer.getSource().getFeatures());
     }
     if (enableVoiceHint) {
