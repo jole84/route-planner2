@@ -1,7 +1,6 @@
 import './style.css';
 import { Feature, Map, View } from "ol";
 import { Modify } from "ol/interaction.js";
-// import { saveAs } from 'file-saver';
 import { Stroke, Style, Icon, Fill, Text } from "ol/style.js";
 import { toLonLat } from "ol/proj.js";
 import { toStringXY } from "ol/coordinate";
@@ -253,7 +252,6 @@ document.getElementById("exportRouteButton").onclick = function () {
       decimals: 5,
     });
     const blob = new Blob([gpxFile], { type: "application/gpx+xml" });
-    // saveAs(blob, fileName + ".gpx");
     saveFile(blob, fileName + ".gpx");
     menuDivcontent.replaceChildren();
   }
@@ -288,7 +286,6 @@ document.getElementById("saveGeoJsonButton").onclick = () => {
     decimals: 5,
   });
   const blob = new Blob([geoJsonFile], { type: "application/json" });
-  // saveAs(blob, fileName + ".geojson");
   saveFile(blob, fileName + ".geojson");
   menuDivcontent.replaceChildren();
 }
@@ -320,29 +317,6 @@ document.getElementById("reverseRoute").addEventListener("click", function () {
   contextPopup.setPosition();
   routeMe();
 });
-
-// temp
-// document.getElementById("lowerLeftButton").addEventListener("click", () => {
-//   const poiFeatures = poiLayer.getSource().getFeatures();
-//   poiFeatures.forEach(function (element) {
-
-//     console.log(element.getProperties())
-//   })
-//   console.log(JSON.parse(localStorage.poiString || "[]"));
-
-//   const collection = new Collection([],{unique:true});
-//   collection.extend(poiLayer.getSource().getFeatures());
-//   collection.extend(routeLineLayer.getSource().getFeatures());
-
-//   console.log(collection.getArray())
-//   const fileFormat = new GPX();
-//   const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
-//     dataProjection: "EPSG:4326",
-//     featureProjection: "EPSG:3857",
-//   });
-//   console.log(gpxFile);
-//   document.getElementById("trackLength").innerHTML = "<pre>" + (gpxFile) + "</pre>";
-// });
 
 const slitlagerkarta = new TileLayer({
   source: new XYZ({
@@ -449,15 +423,6 @@ const routePointsLayer = new VectorLayer({
     return routePointStyle[feature.get("pointType")];
   },
 });
-// const modifyroutePoints = new Modify({ source: routePointsLayer.getSource() });
-// modifyroutePoints.addEventListener("modifyend", function () {
-//   const routePoints = routePointsLayer.getSource().getFeatures();
-//   routePointsLineString.setCoordinates([]);
-//   for (let i = 0; i < routePoints.length; i++) {
-//     routePointsLineString.appendCoordinate(routePoints[i].getGeometry().getCoordinates());
-//   };
-//   routeMe();
-// });
 
 const routePointsLineString = new LineString([]);
 const routePointsLineStringLayer = new VectorLayer({
@@ -1108,12 +1073,6 @@ document.getElementById("streetviewlink").addEventListener("click", function () 
   var gmaplink = "http://maps.google.com/maps?layer=c&cbll=" + toLonLat(contextPopup.getPosition()).reverse();
   window.open(gmaplink);
 });
-
-// document.getElementById("navAppRoute").addEventListener("click", function () {
-//   var navapplink = "https://jole84.se/nav-app/index.html?destinationPoints=" + JSON.stringify([toLonLat(contextPopup.getPosition())]);
-//   window.open(navapplink);
-// });
-
 
 document.getElementById("addRoutePosition").addEventListener("click", function () {
   routePointsLineString.appendCoordinate(contextPopup.getPosition());

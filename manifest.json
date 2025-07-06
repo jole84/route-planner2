@@ -47,6 +47,7 @@
             "action": "https://jole84.se/route-planner2/index.html",
             "accept": {
                 "application/gpx": [".gpx"],
+                "application/text": [".gpx.txt"],
                 "application/kml": [".kml"],
                 "application/geojson": [".geojson"]
             }
