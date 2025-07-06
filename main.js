@@ -9,6 +9,7 @@ import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
 import Collection from 'ol/Collection.js';
 import { Polygon, MultiPolygon, Point, MultiLineString, LineString } from 'ol/geom';
+// import RegularShape from 'ol/style/RegularShape.js';
 import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
@@ -465,16 +466,53 @@ const routePointsLineStringLayer = new VectorLayer({
       routePointsLineString: true,
     })],
   }),
-  style: function (feature) {
-    return new Style({
-      stroke: new Stroke({
-        color: [255, 0, 0, 0.6],
-        lineDash: [20],
-        width: 6,
-      }),
-    })
-  }
+  style: routePointsLayerStyle,
 });
+
+function routePointsLayerStyle(feature) {
+  const geometry = feature.getGeometry();
+  const styles = [new Style({
+    stroke: new Stroke({
+      color: [255, 0, 0, 0.6],
+      lineDash: [20],
+      width: 6,
+    })
+  })];
+
+  geometry.forEachSegment(function (start, end) {
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const halfx = (start[0] + end[0]) / 2
+    const halfy = (start[1] + end[1]) / 2
+    const rotation = Math.atan2(dy, dx);
+    // arrows
+    styles.push(
+      new Style({
+        geometry: new Point([halfx, halfy]),
+        image: new Icon({
+          src: 'https://openlayers.org/en/latest/examples/data/arrow.png',
+          color:  [255, 0, 0, 0.6],
+          // anchor: [-3, 0.5],
+          scale: 2.5,
+          rotateWithView: true,
+          rotation: -rotation,
+        }),
+        // image: new RegularShape({
+        //   fill: new Fill({
+        //     color: [255, 0, 0, 0.6]
+        //   }),
+        //   points: 3,
+        //   radius: 25,
+        //   displacement: [25, 0],
+        //   rotation: -rotation,
+        //   angle: Math.PI / 2 // rotate 90°
+        // })
+      }),
+    );
+  });
+
+  return styles;
+}
 
 routePointsLineString.addEventListener("change", function () {
   const routePoints = routePointsLineString.getCoordinates();
