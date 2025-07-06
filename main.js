@@ -99,7 +99,7 @@ const pickerOpts = {
     {
       // description: "Images",
       accept: {
-        "application/*": [".gpx", ".gpx.txt", ".geojson", ".kml"],
+        "application/text": [".gpx", ".gpx.txt", ".geojson", ".kml"],
       },
     },
   ],
