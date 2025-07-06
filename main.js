@@ -307,6 +307,7 @@ document.getElementById("clearMapButton").addEventListener("click", function () 
   poiLayer.getSource().clear();
   gpxLayer.getSource().clear();
   drawLayer.getSource().clear();
+  drawLayer.getSource().addFeature(newDrawFeature);
   localStorage.removeItem("poiString");
   localStorage.removeItem("routePoints");
   localStorage.removeItem("gpxLayer");
