@@ -116,7 +116,6 @@ async function getTheFile() {
     const fileData = await fileHandle[i].getFile();
     fileLoader(fileData);
   }
-  console.log(fileHandle)
 }
 
 
@@ -311,7 +310,7 @@ document.getElementById("clearMapButton").addEventListener("click", function () 
   localStorage.removeItem("routePoints");
   localStorage.removeItem("gpxLayer");
   localStorage.removeItem("drawFeatures");
-  document.location.reload();
+  // document.location.reload();
 });
 
 document.getElementById("reverseRoute").addEventListener("click", function () {
