@@ -138,7 +138,7 @@ function fileLoader(fileData) {
   const reader = new FileReader();
   reader.readAsText(fileData, "UTF-8");
   reader.onload = function (evt) {
-    const fileFormat = getFileFormat(fileData.name.split(".").pop().toLowerCase());
+    const fileFormat = getFileFormat(fileData.name.replace(".gpx.txt", ".gpx").split(".").pop().toLowerCase());
     const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
       dataProjection: "EPSG:4326",
       featureProjection: "EPSG:3857",
