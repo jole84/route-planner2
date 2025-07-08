@@ -144,18 +144,6 @@ function fileLoader(fileData) {
       featureProjection: "EPSG:3857",
     });
     gpxFeatures.forEach(feature => {
-      if (feature.getGeometry().getType() === "Point") {
-        addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
-      } else {
-        if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
-          feature.setId(lineStringId++);
-        }
-        if (!feature.get("routePointsLineString") && !feature.get("drawing")) {
-          gpxLayer.getSource().addFeature(feature);
-        }
-        feature.set("gpxFeature", true);
-      }
-
       if (loadAsProject || loadAsRoute) {
         if (feature.get("drawing")) {
           drawLayer.getSource().addFeature(feature);
@@ -163,6 +151,8 @@ function fileLoader(fileData) {
           feature.getGeometry().getCoordinates().forEach(function (coordinate) {
             routePointsLineString.appendCoordinate(coordinate);
           });
+        } else if (feature.getGeometry().getType() === "Point") {
+          addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
         } else {
           if (feature.getGeometry().getType() === "LineString") {
             feature.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
@@ -176,6 +166,14 @@ function fileLoader(fileData) {
           }
         }
         routeMe();
+      } else {
+        if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
+          feature.setId(lineStringId++);
+        }
+        if (!feature.get("routePointsLineString") && !feature.get("drawing")) {
+          gpxLayer.getSource().addFeature(feature);
+        }
+        feature.set("gpxFeature", true);
       }
     });
   }
@@ -688,28 +686,28 @@ const gpxLayer = new VectorLayer({
 });
 
 let lineStringId = 0;
-gpxLayer.getSource().addEventListener("change", function () {
-  const poiString = [];
-  gpxLayer.getSource().forEachFeature(function (feature) {
-    poiString.push([feature.getGeometry().getType(), feature.getGeometry().getCoordinates(), feature.get("name")]);
-  });
-  localStorage.gpxLayer = JSON.stringify(poiString);
-});
+// gpxLayer.getSource().addEventListener("change", function () {
+//   const poiString = [];
+//   gpxLayer.getSource().forEachFeature(function (feature) {
+//     poiString.push([feature.getGeometry().getType(), feature.getGeometry().getCoordinates(), feature.get("name")]);
+//   });
+//   localStorage.gpxLayer = JSON.stringify(poiString);
+// });
 
-JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
-  const geomType = element[0];
-  const coordinates = element[1];
-  const name = element[2];
-  const newFeature = new Feature({
-    geometry: newGeom(geomType, coordinates),
-    name: name,
-    gpxFeature: true,
-  });
-  if (newFeature.getGeometry().getType() == "LineString" || newFeature.getGeometry().getType() == "MultiLineString") {
-    newFeature.setId(0);
-  }
-  gpxLayer.getSource().addFeature(newFeature);
-});
+// JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
+//   const geomType = element[0];
+//   const coordinates = element[1];
+//   const name = element[2];
+//   const newFeature = new Feature({
+//     geometry: newGeom(geomType, coordinates),
+//     name: name,
+//     gpxFeature: true,
+//   });
+//   if (newFeature.getGeometry().getType() == "LineString" || newFeature.getGeometry().getType() == "MultiLineString") {
+//     newFeature.setId(0);
+//   }
+//   gpxLayer.getSource().addFeature(newFeature);
+// });
 
 function newGeom(featureType, coordinates) {
   if (featureType == "Point") {
