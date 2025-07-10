@@ -34,13 +34,10 @@ body {
   right: 5px;
   position: absolute;
   display: none;
-  /* display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  white-space: nowrap;
-  justify-content: space-between;
-  max-width: 350px;
-  gap: 5px; */
+}
+
+#exportButtons{
+  margin-top: 5px;
 }
 
 #crosshair {

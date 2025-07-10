@@ -245,22 +245,28 @@ document.getElementById("exportRouteButton").onclick = function () {
     });
     const blob = new Blob([gpxFile], { type: "application/gpx+xml" });
     saveFile(blob, fileName + ".gpx");
-    menuDivcontent.replaceChildren();
+    // menuDivcontent.replaceChildren();
   }
 }
 
 async function saveFile(data, fileName) {
-  // create a new handle
-  const newHandle = await window.showSaveFilePicker({ suggestedName: fileName });
+  try {
+    // create a new handle
+    const newHandle = await window.showSaveFilePicker({ suggestedName: fileName });
 
-  // create a FileSystemWritableFileStream to write to
-  const writableStream = await newHandle.createWritable();
+    // create a FileSystemWritableFileStream to write to
+    const writableStream = await newHandle.createWritable();
 
-  // write our file
-  await writableStream.write(data);
+    // write our file
+    await writableStream.write(data);
 
-  // close the file and write the contents to disk.
-  await writableStream.close();
+    // close the file and write the contents to disk.
+    await writableStream.close();
+
+    alert(fileName + " sparad!");
+  } catch (e) {
+    alert("Något gick snett :( \n" + e.message);
+  }
 }
 
 function getNonEmptyFeatures(inputLayer) {
@@ -289,7 +295,7 @@ document.getElementById("saveGeoJsonButton").onclick = () => {
   });
   const blob = new Blob([geoJsonFile], { type: "application/json" });
   saveFile(blob, fileName + ".geojson");
-  menuDivcontent.replaceChildren();
+  // menuDivcontent.replaceChildren();
 }
 
 document.getElementById("gpxOpacity").addEventListener("change", function () {
