@@ -874,6 +874,8 @@ function routeMe() {
   if (coordsString.length >= 2) {
     if (localStorage.routeMode == "direkt") {
       routeLineString.setCoordinates([routePointsLineString.getCoordinates()]);
+      trackLength = getLength(routePointsLineString) / 1000;
+      document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
     } else {
       const brouterUrl = "https://brouter.de/brouter?lonlats=" +
         coordsString.join("|") +
