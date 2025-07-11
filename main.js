@@ -520,28 +520,56 @@ const voiceHintsLayer = new VectorLayer({
   style: gpxStyle,
 });
 
+const translateArray = {
+  "turn": "sväng",
+  // "new name": "nytt vägnamn", //?
+  "depart": "start",
+  "arrive": "ankomst",
+  // "merge": "sammansätt?", //?
+  "on ramp": "påfart",
+  "off ramp": "avfart",
+  // "fork": "", //?
+  "end of road": "slutet av vägen sväng",
+  "continue": "fortsätt",
+  // "roundabout": "rondell",
+  // "rotary": "rondell",
+  "roundabout turn": "i rondellen sväng",
+  "notification": "", //?
+  "exit roundabout": "kör ut ur rondell",
+  "exit rotary": "kör ut ur rondell",
+  // turns
+  "uturn": "u-sväng",
+  "sharp right": "höger",
+  "right": "höger",
+  "slight right": "höger",
+  "straight": "rakt",
+  "slight left": "vänster",
+  "left": "vänster",
+  "sharp left": "vänster",
+};
+
 function createTurnHint(routeStep) {
   const maneuverType = routeStep.maneuver.type;
   const maneuverModifier = routeStep.maneuver.modifier;
 
-  if (!["depart"].includes(routeStep.maneuver.type)) {
-    const turnString = [
-      routeStep.name,
-      routeStep.maneuver.type,
-      routeStep.maneuver.modifier,
-      routeStep.exits,
-    ]
-
-    console.log(routeStep)
-    routeStep.geometry = []
-    routeStep.intersections = []
-    const stepManeuverCoordinates = fromLonLat(routeStep.maneuver.location);
-    const marker = new Feature({
-      name: turnString.join(" "),
-      geometry: new Point(stepManeuverCoordinates),
-    });
-    voiceHintsLayer.getSource().addFeature(marker);
+  if (!translateArray.hasOwnProperty(maneuverType)) {
+    return
   }
+
+  const turnString = [
+    routeStep.name,
+    translateArray[routeStep.maneuver.type],
+    translateArray[routeStep.maneuver.modifier],
+    routeStep.exits,
+  ];
+
+  console.log(routeStep)
+  const stepManeuverCoordinates = fromLonLat(routeStep.maneuver.location);
+  const marker = new Feature({
+    name: turnString.join(" ").trim(),
+    geometry: new Point(stepManeuverCoordinates),
+  });
+  voiceHintsLayer.getSource().addFeature(marker);
 }
 
 // const allowedTurnType = [2, 4, 5, 7, 13, 14];
@@ -907,12 +935,13 @@ function routeMe() {
       const params = new URLSearchParams({
         // exclude: ["motorway"],
         // annotations: true,
+        // radiuses: 50,
         geometries: 'geojson',
         continue_straight: false,
         overview: 'full',
         generate_hints: false,
         skip_waypoints: true,
-        steps: enableVoiceHint,
+        steps: enableVoiceHint // || true,
       });
       fetch(`https://router.project-osrm.org/route/v1/${localStorage.routeMode}/${coordsString.join(";")}?` + params).then(response => {
         return response.json();
@@ -934,9 +963,9 @@ function routeMe() {
         routeLineString.setCoordinates([newGeometryCoordinates]);
 
         const legs = result.routes[0].legs;
-        for (const leg in legs) {
-          for (const step in result.routes[0].legs[leg].steps) {
-            createTurnHint(result.routes[0].legs[leg].steps[step]);
+        for (const leg of legs) {
+          for (const step of leg.steps) {
+            createTurnHint(step);
           }
         }
       });
