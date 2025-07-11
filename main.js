@@ -39,7 +39,7 @@ let qrCodeLink = new QRCode("qrRoutePlanner", {
   // height: 512,
 });
 
-localStorage.routeMode = document.getElementById("routeModeSelector").value = localStorage.routeMode || "car-fast";
+localStorage.routeMode = document.getElementById("routeModeSelector").value = localStorage.routeMode || "driving";
 document.getElementById("routeModeSelector").addEventListener("change", function (event) {
   localStorage.routeMode = document.getElementById("routeModeSelector").value;
   routeMe();
@@ -908,6 +908,7 @@ function routeMe() {
         // exclude: ["motorway"],
         // annotations: true,
         geometries: 'geojson',
+        continue_straight: false,
         overview: 'full',
         generate_hints: false,
         skip_waypoints: true,
