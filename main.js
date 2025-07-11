@@ -2,7 +2,7 @@ import './style.css';
 import { Feature, Map, View } from "ol";
 import { Modify } from "ol/interaction.js";
 import { Stroke, Style, Icon, Fill, Text } from "ol/style.js";
-import { toLonLat } from "ol/proj.js";
+import { fromLonLat, toLonLat } from "ol/proj.js";
 import { toStringXY } from "ol/coordinate";
 import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
@@ -520,47 +520,71 @@ const voiceHintsLayer = new VectorLayer({
   style: gpxStyle,
 });
 
-const allowedTurnType = [2, 4, 5, 7, 13, 14];
-function translateVoicehint([geoPart, turnInstruction, roundaboutExit, distanceToNext, turnDeg]) {
-  let returnString = "";
-  const turnType = {
-    1: "Fortsätt (rakt fram)",
-    2: "Sväng vänster",
-    3: "Sväng svagt åt vänster",
-    4: "Sväng skarpt vänster",
-    5: "Sväng höger",
-    6: "Sväng svagt åt höger",
-    7: "Sväng skarpt höger",
-    8: "Håll vänster",
-    9: "Håll höger",
-    10: "U-sväng",
-    11: "U-sväng höger",
-    12: "Off route",
-    13: "I rondellen, tag ",
-    14: "I rondellen, tag ",
-    15: "180 grader u-sväng",
-    16: "Beeline routing",
+function createTurnHint(routeStep) {
+  const maneuverType = routeStep.maneuver.type;
+  const maneuverModifier = routeStep.maneuver.modifier;
+
+  if (!["depart"].includes(routeStep.maneuver.type)) {
+    const turnString = [
+      routeStep.name,
+      routeStep.maneuver.type,
+      routeStep.maneuver.modifier,
+      routeStep.exits,
+    ]
+
+    console.log(routeStep)
+    routeStep.geometry = []
+    routeStep.intersections = []
+    const stepManeuverCoordinates = fromLonLat(routeStep.maneuver.location);
+    const marker = new Feature({
+      name: turnString.join(" "),
+      geometry: new Point(stepManeuverCoordinates),
+    });
+    voiceHintsLayer.getSource().addFeature(marker);
   }
-  const nummer = {
-    1: "första",
-    2: "andra",
-    3: "tredje",
-    4: "fjärde",
-    5: "femte",
-  }
-  returnString += turnType[turnInstruction];
-  if (roundaboutExit > 0) {
-    returnString += nummer[roundaboutExit] + " utfarten";
-  }
-  if (distanceToNext < 1000) {
-    returnString += ", " + Math.round(distanceToNext) + "m"
-  }
-  if (distanceToNext > 1000) {
-    returnString += ", " + Math.round(distanceToNext / 1000) + "km"
-  }
-  // returnString += turnDeg;
-  return returnString;
 }
+
+// const allowedTurnType = [2, 4, 5, 7, 13, 14];
+// function translateVoicehint([geoPart, turnInstruction, roundaboutExit, distanceToNext, turnDeg]) {
+//   let returnString = "";
+//   const turnType = {
+//     1: "Fortsätt (rakt fram)",
+//     2: "Sväng vänster",
+//     3: "Sväng svagt åt vänster",
+//     4: "Sväng skarpt vänster",
+//     5: "Sväng höger",
+//     6: "Sväng svagt åt höger",
+//     7: "Sväng skarpt höger",
+//     8: "Håll vänster",
+//     9: "Håll höger",
+//     10: "U-sväng",
+//     11: "U-sväng höger",
+//     12: "Off route",
+//     13: "I rondellen, tag ",
+//     14: "I rondellen, tag ",
+//     15: "180 grader u-sväng",
+//     16: "Beeline routing",
+//   }
+//   const nummer = {
+//     1: "första",
+//     2: "andra",
+//     3: "tredje",
+//     4: "fjärde",
+//     5: "femte",
+//   }
+//   returnString += turnType[turnInstruction];
+//   if (roundaboutExit > 0) {
+//     returnString += nummer[roundaboutExit] + " utfarten";
+//   }
+//   if (distanceToNext < 1000) {
+//     returnString += ", " + Math.round(distanceToNext) + "m"
+//   }
+//   if (distanceToNext > 1000) {
+//     returnString += ", " + Math.round(distanceToNext / 1000) + "km"
+//   }
+//   // returnString += turnDeg;
+//   return returnString;
+// }
 
 const poiLayer = new VectorLayer({
   source: new VectorSource(),
@@ -877,38 +901,78 @@ function routeMe() {
       trackLength = getLength(routePointsLineString) / 1000;
       document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
     } else {
-      const brouterUrl = "https://brouter.de/brouter?lonlats=" +
-        coordsString.join("|") +
-        "&profile=" + localStorage.routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
-        straightPoints.join(",");
-
-      fetch(brouterUrl).then(function (response) {
-        response.json().then(function (result) {
-          trackLength = result.features[0].properties["track-length"] / 1000; // track-length in km
-          const totalTime = result.features[0].properties["total-time"] * 1000; // track-time in milliseconds
-          document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-          document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-          // add route information to info box
-
-          routeLineString.setCoordinates([new GeoJSON().readFeature(result.features[0], {
-            dataProjection: "EPSG:4326",
-            featureProjection: "EPSG:3857"
-          }).getGeometry().getCoordinates()]);
-
-          if (enableVoiceHint) {
-
-            const voicehints = result.features[0].properties.voicehints;
-            const routeGeometryCoordinates = routeLineString.getCoordinates()[0];
-            for (var i = 0; i < voicehints.length; i++) {
-              const marker = new Feature({
-                name: translateVoicehint(voicehints[i]),
-                geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
-              });
-              voiceHintsLayer.getSource().addFeature(marker);
-            }
-          }
-        });
+      // localStorage.routeMode
+      // straightPoints
+      // ${localStorage.routeMode}
+      const params = new URLSearchParams({
+        // exclude: ["motorway"],
+        // annotations: true,
+        geometries: 'geojson',
+        overview: 'full',
+        generate_hints: false,
+        skip_waypoints: true,
+        steps: enableVoiceHint,
       });
+      fetch(`https://router.project-osrm.org/route/v1/${localStorage.routeMode}/${coordsString.join(";")}?` + params).then(response => {
+        return response.json();
+      }).then(result => {
+        console.log(result)
+        const format = new GeoJSON();
+        const newGeometry = format.readFeatures(result.routes[0].geometry, {
+          dataProjection: "EPSG:4326",
+          featureProjection: "EPSG:3857"
+        });
+
+        trackLength = result.routes[0].distance / 1000; // track-length in km
+        const totalTime = result.routes[0].duration * 1000; // track-time in milliseconds
+        document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+        document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+        const newGeometryCoordinates = newGeometry[0].getGeometry().getCoordinates();
+        newGeometryCoordinates.push(fromLonLat(coordsString[coordsString.length - 1]));
+        routeLineString.setCoordinates([newGeometryCoordinates]);
+
+        const legs = result.routes[0].legs;
+        for (const leg in legs) {
+          for (const step in result.routes[0].legs[leg].steps) {
+            createTurnHint(result.routes[0].legs[leg].steps[step]);
+          }
+        }
+      });
+
+
+      // const brouterUrl = "https://brouter.de/brouter?lonlats=" +
+      //   coordsString.join("|") +
+      //   "&profile=" + localStorage.routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
+      //   straightPoints.join(",");
+
+      // fetch(brouterUrl).then(function (response) {
+      //   response.json().then(function (result) {
+      //     trackLength = result.features[0].properties["track-length"] / 1000; // track-length in km
+      //     const totalTime = result.features[0].properties["total-time"] * 1000; // track-time in milliseconds
+      //     document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+      //     document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+      //     // add route information to info box
+
+      //     routeLineString.setCoordinates([new GeoJSON().readFeature(result.features[0], {
+      //       dataProjection: "EPSG:4326",
+      //       featureProjection: "EPSG:3857"
+      //     }).getGeometry().getCoordinates()]);
+
+      //     if (enableVoiceHint) {
+
+      //       const voicehints = result.features[0].properties.voicehints;
+      //       const routeGeometryCoordinates = routeLineString.getCoordinates()[0];
+      //       for (var i = 0; i < voicehints.length; i++) {
+      //         const marker = new Feature({
+      //           name: translateVoicehint(voicehints[i]),
+      //           geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
+      //         });
+      //         voiceHintsLayer.getSource().addFeature(marker);
+      //       }
+      //     }
+      // });
+      // });
     }
   } else {
     routeLineString.setCoordinates([]);
