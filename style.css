@@ -3,6 +3,7 @@
 html,
 body {
   margin: 0;
+  width: 100%;
   height: 100%;
   font-family: "roboto", sans-serif;
   background-color: black;
@@ -10,23 +11,14 @@ body {
 
 #map {
   background-color: #bfe6ff;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 100%;
+  flex-grow: 1;
 }
 
-#lowerLeftGroup {
+#mainContainer {
+  height: 100%;
+  width: 100%;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  bottom: 5px;
-  left: 5px;
-  position: absolute;
-  white-space: nowrap;
-  justify-content: space-between;
-  max-width: 350px;
-  gap: 5px;
+  flex-direction: column;
 }
 
 #lowerRightGroup {
@@ -34,10 +26,6 @@ body {
   right: 5px;
   position: absolute;
   display: none;
-}
-
-#exportButtons{
-  margin-top: 5px;
 }
 
 #crosshair {
@@ -69,14 +57,11 @@ body {
   letter-spacing: 1.3px;
   line-height: 1.4;
   max-width: 90%;
-  /* padding-bottom: 5px;
-  padding-left: 5px;
-  padding-right: 5px; */
   max-height: calc(100% - 20px);
   padding: 5px;
   position: absolute;
   right: 5px;
-  top: 5px;
+  margin-top: 5px;
   word-wrap: break-word;
   z-index: 10;
   overflow: overlay;
@@ -87,11 +72,14 @@ body {
 }
 
 #menuContainer {
+  top: 0;
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  pointer-events: none;
 }
 
 #menuDivContent>div {
@@ -114,12 +102,8 @@ body {
   user-select: all;
 }
 
-#qrRoutePlanner{
+#qrRoutePlanner {
   width: -webkit-fill-available;
-}
-
-#gpxFileName {
-  min-width: 15rem;
 }
 
 .textBox:has(#menuDivContent:empty) {
@@ -140,7 +124,6 @@ body {
 }
 
 .form-select {
-  width: 100%;
   background-color: #fff;
   border-radius: 5px;
   color: #4f4f4f;
@@ -148,7 +131,7 @@ body {
   font-weight: 400;
   line-height: 1.6;
   padding: .375rem 2.25rem .375rem .75rem;
-  /* max-width: 350px; */
+  margin-top: 3px;
 }
 
 .form-control {
@@ -192,21 +175,6 @@ kbd {
   border-radius: .3rem;
 }
 
-/* .btn-group-vertical {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-} */
-
-.btn:active {
-  transform: translateY(2px);
-}
-
-.btn:hover {
-  filter: brightness(0.9);
-  transition: 0.2s;
-}
-
 .btn-danger {
   background-color: #dc4c64;
 }
@@ -242,6 +210,7 @@ kbd {
   gap: 5px;
   flex-direction: column;
   overflow: overlay;
+  pointer-events: auto;
 }
 
 /* contextmenu */
@@ -250,7 +219,7 @@ kbd {
   flex-direction: column;
   background-color: white;
   border-radius: 5px;
-  box-shadow: 0px 0px 10px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
   color: rgb(32, 32, 32);
 }
 
@@ -279,18 +248,87 @@ kbd {
   background-color: lightgray;
 }
 
+/* Navbar container */
+.navbar {
+  overflow: hidden;
+  background-color: #333;
+  font-family: Arial;
+}
+
+/* Links inside the navbar */
+/* .navbar a {
+  float: left;
+  font-size: 16px;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+} */
+
+/* The dropdown container */
+.dropdown {
+  float: left;
+  overflow: hidden;
+}
+
+/* Dropdown button */
+.dropdown .dropbtn {
+  font-size: 16px;
+  border: none;
+  outline: none;
+  color: white;
+  padding: 10px 25px;
+  background-color: inherit;
+  font-family: inherit;
+  /* Important for vertical align on mobile phones */
+  margin: 0;
+  /* Important for vertical align on mobile phones */
+}
+
+/* Add a red background color to navbar links on hover */
+/* .navbar a:hover, */
+.dropdown:hover .dropbtn {
+  background-color: red;
+}
+
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  border-radius: 5px;
+}
+
+/* Links and buttons inside the dropdown */
+/* .dropdown-content a, */
+.dropdown-content .dropdownItem {
+  float: none;
+  cursor: pointer;
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+/* Add a grey background color to dropdown links on hover */
+/* .dropdown-content a:hover, */
+.dropdown-content .dropdownItem:hover {
+  background-color: #ddd;
+}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+
 @media (max-width: 650px) {
-  #lowerLeftGroup {
-    max-width: calc(100% - 10px);
-  }
-
-  #lowerLeftGroup {
-    top: 5px;
-    bottom: unset;
-  }
-
-  #infoGroup {
-    top: 150px;
+  .dropdown .dropbtn {
+    padding: 10px 10px;
   }
 }
 

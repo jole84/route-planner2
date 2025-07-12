@@ -23,7 +23,7 @@ const contextPopupButton = document.getElementById("contextPopupButton");
 const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const helpDiv = document.getElementById("helpDiv");
-const gpxFileNameInput = document.getElementById("gpxFileNameInput");
+const exportLinks = document.getElementById("exportLinks");
 // const gpxFileName = document.getElementById("gpxFileName");
 const savePoiNameInput = document.getElementById("savePoiNameInput");
 const loadFileDialog = document.getElementById("loadFileDialog");
@@ -49,7 +49,7 @@ localStorage.centerCoordinate = localStorage.centerCoordinate || "[1700000, 8500
 localStorage.centerZoom = localStorage.centerZoom || 7;
 localStorage.routePlannerMapMode = localStorage.routePlannerMapMode || 0; // default map
 
-document.getElementById("openMenuButton").addEventListener("click", () => {
+document.getElementById("openInfoButton").addEventListener("click", () => {
   menuDivcontent.replaceChildren(menuItems);
   document.getElementById("enableVoiceHint").checked = enableVoiceHint;
 });
@@ -61,13 +61,9 @@ document.getElementById("menuDivCloseButton").addEventListener("click", () => {
   menuDivcontent.replaceChildren();
 });
 
-document.getElementById("openhelpButton").addEventListener("click", () => {
-  menuDivcontent.replaceChildren(helpDiv);
-});
-
-document.getElementById("clickFileButton").onclick = function () {
-  menuDivcontent.replaceChildren(loadFileDialog);
-}
+// document.getElementById("clickFileButton").onclick = function () {
+//   menuDivcontent.replaceChildren(loadFileDialog);
+// }
 
 // document.getElementById("mouseClickAdd").addEventListener("change", () => {
 //   localStorage.mouseClickAdd = document.getElementById("mouseClickAdd").checked;
@@ -117,11 +113,14 @@ async function getTheFile() {
     fileLoader(fileData);
   }
 }
-
+document.getElementById("loadRouteButton").addEventListener("click", evt => {
+  loadAsRoute = true;
+  getTheFile();
+});
 
 document.getElementById("selectFileButton").addEventListener("click", evt => {
+  loadAsRoute = false;
   getTheFile();
-  // menuDivcontent.replaceChildren();
 });
 
 // document.getElementById("customFileButton").addEventListener("change", evt => {
@@ -132,9 +131,9 @@ document.getElementById("selectFileButton").addEventListener("click", evt => {
 // menuDivcontent.replaceChildren();
 // });
 
+let loadAsRoute = false;
 function fileLoader(fileData) {
   const loadAsProject = fileData.name.startsWith("Projekt_");
-  const loadAsRoute = document.getElementById("loadRoute").checked;
   const reader = new FileReader();
   reader.readAsText(fileData, "UTF-8");
   reader.onload = function (evt) {
@@ -187,13 +186,12 @@ function toCoordinateString(coordinate) {
 }
 
 document.getElementById("exportRouteButton").onclick = function () {
-  menuDivcontent.replaceChildren(gpxFileNameInput);
+  menuDivcontent.replaceChildren(exportLinks);
 
   const routePoints = [];
   const poiPoints = [];
   let linkCode = "https://jole84.se/nav-app/index.html?";
   let trackPointLink = "https://jole84.se/nav-app/index.html?";
-  let fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
 
   routePointsLayer.getSource().forEachFeature(function (feature) {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
@@ -229,24 +227,6 @@ document.getElementById("exportRouteButton").onclick = function () {
   } catch {
     console.log("qr error")
   }
-
-  document.getElementById("saveFileOkButton").onclick = () => {
-    // const fileName = gpxFileName.value || gpxFileName.placeholder;
-    const fileFormat = new GPX();
-    const collection = new Collection();
-    collection.extend(poiLayer.getSource().getFeatures());
-    collection.extend(getNonEmptyFeatures(routeLineLayer));
-    collection.extend(getNonEmptyFeatures(voiceHintsLayer));
-
-    const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857",
-      decimals: 5,
-    });
-    const blob = new Blob([gpxFile], { type: "application/gpx+xml" });
-    saveFile(blob, fileName + ".gpx");
-    // menuDivcontent.replaceChildren();
-  }
 }
 
 async function saveFile(data, fileName) {
@@ -277,6 +257,23 @@ function getNonEmptyFeatures(inputLayer) {
     }
   });
   return returnArray;
+}
+
+document.getElementById("exportGPXButton").onclick = () => {
+  const fileFormat = new GPX();
+  const collection = new Collection();
+  const fileName = "Rutt_" + new Date().toLocaleDateString().replaceAll(" ", "_") + "_" + trackLength.toFixed(2) + "km";
+  collection.extend(poiLayer.getSource().getFeatures());
+  collection.extend(getNonEmptyFeatures(routeLineLayer));
+  collection.extend(getNonEmptyFeatures(voiceHintsLayer));
+
+  const gpxFile = fileFormat.writeFeatures(collection.getArray(), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+    decimals: 5,
+  });
+  const blob = new Blob([gpxFile], { type: "application/gpx+xml" });
+  saveFile(blob, fileName + ".gpx");
 }
 
 document.getElementById("saveGeoJsonButton").onclick = () => {
@@ -571,48 +568,6 @@ function createTurnHint(routeStep) {
   });
   voiceHintsLayer.getSource().addFeature(marker);
 }
-
-// const allowedTurnType = [2, 4, 5, 7, 13, 14];
-// function translateVoicehint([geoPart, turnInstruction, roundaboutExit, distanceToNext, turnDeg]) {
-//   let returnString = "";
-//   const turnType = {
-//     1: "Fortsätt (rakt fram)",
-//     2: "Sväng vänster",
-//     3: "Sväng svagt åt vänster",
-//     4: "Sväng skarpt vänster",
-//     5: "Sväng höger",
-//     6: "Sväng svagt åt höger",
-//     7: "Sväng skarpt höger",
-//     8: "Håll vänster",
-//     9: "Håll höger",
-//     10: "U-sväng",
-//     11: "U-sväng höger",
-//     12: "Off route",
-//     13: "I rondellen, tag ",
-//     14: "I rondellen, tag ",
-//     15: "180 grader u-sväng",
-//     16: "Beeline routing",
-//   }
-//   const nummer = {
-//     1: "första",
-//     2: "andra",
-//     3: "tredje",
-//     4: "fjärde",
-//     5: "femte",
-//   }
-//   returnString += turnType[turnInstruction];
-//   if (roundaboutExit > 0) {
-//     returnString += nummer[roundaboutExit] + " utfarten";
-//   }
-//   if (distanceToNext < 1000) {
-//     returnString += ", " + Math.round(distanceToNext) + "m"
-//   }
-//   if (distanceToNext > 1000) {
-//     returnString += ", " + Math.round(distanceToNext / 1000) + "km"
-//   }
-//   // returnString += turnDeg;
-//   return returnString;
-// }
 
 const poiLayer = new VectorLayer({
   source: new VectorSource(),
@@ -943,7 +898,7 @@ function routeMe() {
         skip_waypoints: true,
         steps: enableVoiceHint // || true,
       });
-      fetch(`https://router.project-osrm.org/route/v1/${localStorage.routeMode}/${coordsString.join(";")}?` + params).then(response => {
+      fetch(`https://router.project-osrm.org/route/v1/driving/${coordsString.join(";")}?` + params).then(response => {
         return response.json();
       }).then(result => {
         console.log(result)
@@ -963,46 +918,20 @@ function routeMe() {
         routeLineString.setCoordinates([newGeometryCoordinates]);
 
         const legs = result.routes[0].legs;
+        // routeLineLayer.getSource().clear();
         for (const leg of legs) {
           for (const step of leg.steps) {
             createTurnHint(step);
+
+            // const newGeometry = format.readFeatures(step.geometry, {
+            //   dataProjection: "EPSG:4326",
+            //   featureProjection: "EPSG:3857"
+            // });
+            // routeLineLayer.getSource().addFeature(newGeometry[0]);
           }
         }
       });
 
-
-      // const brouterUrl = "https://brouter.de/brouter?lonlats=" +
-      //   coordsString.join("|") +
-      //   "&profile=" + localStorage.routeMode + "&alternativeidx=0&format=geojson&timode=2&straight=" +
-      //   straightPoints.join(",");
-
-      // fetch(brouterUrl).then(function (response) {
-      //   response.json().then(function (result) {
-      //     trackLength = result.features[0].properties["track-length"] / 1000; // track-length in km
-      //     const totalTime = result.features[0].properties["total-time"] * 1000; // track-time in milliseconds
-      //     document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-      //     document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-      //     // add route information to info box
-
-      //     routeLineString.setCoordinates([new GeoJSON().readFeature(result.features[0], {
-      //       dataProjection: "EPSG:4326",
-      //       featureProjection: "EPSG:3857"
-      //     }).getGeometry().getCoordinates()]);
-
-      //     if (enableVoiceHint) {
-
-      //       const voicehints = result.features[0].properties.voicehints;
-      //       const routeGeometryCoordinates = routeLineString.getCoordinates()[0];
-      //       for (var i = 0; i < voicehints.length; i++) {
-      //         const marker = new Feature({
-      //           name: translateVoicehint(voicehints[i]),
-      //           geometry: new Point(routeGeometryCoordinates[voicehints[i][0]]),
-      //         });
-      //         voiceHintsLayer.getSource().addFeature(marker);
-      //       }
-      //     }
-      // });
-      // });
     }
   } else {
     routeLineString.setCoordinates([]);
@@ -1063,30 +992,17 @@ function openContextPopup(coordinate) {
 
 
   document.getElementById("removeDrawing").style.display = "none";
-  document.getElementById("reverseRoute").style.display = "none";
-  document.getElementById("flipStraight").style.display = "none";
+  // document.getElementById("flipStraight").style.display = "none";
 
   let drawingToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
     console.log(feature.getProperties());
-    if (feature.get("routeLineString") || feature.get("routePointsLineString")) {
-      document.getElementById("reverseRoute").style.display = "unset";
-    }
     if (feature.get("drawing")) {
       drawingToRemove = feature;
       document.getElementById("removeDrawing").style.display = "unset";
     }
-    if (feature.get("routePointMarker")) {
-      document.getElementById("flipStraight").innerHTML = feature.get("straight") ? "Följ väg" : "Direkt";
-      document.getElementById("flipStraight").style.display = "unset";
-    }
     if (feature.get("gpxFeature")) {
       document.getElementById("removeGpxFeature").style.display = "unset";
-    }
-    document.getElementById("flipStraight").onclick = function () {
-      feature.set("straight", !feature.get("straight"));
-      document.getElementById("flipStraight").innerHTML = feature.get("straight") ? "Följ väg" : "Direkt";
-      routeMe();
     }
     document.getElementById("removeDrawing").onclick = function () {
       drawLayer.getSource().removeFeature(feature);
