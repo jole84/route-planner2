@@ -520,18 +520,18 @@ const voiceHintsLayer = new VectorLayer({
 const translateArray = {
   "turn": "sväng",
   // "new name": "nytt vägnamn", //?
-  "depart": "start",
+  // "depart": "start",
   "arrive": "ankomst",
   // "merge": "sammansätt?", //?
   "on ramp": "påfart",
   "off ramp": "avfart",
   // "fork": "", //?
   "end of road": "slutet av vägen sväng",
-  "continue": "fortsätt",
+  // "continue": "fortsätt",
   // "roundabout": "rondell",
   // "rotary": "rondell",
   "roundabout turn": "i rondellen sväng",
-  "notification": "", //?
+  // "notification": "", //?
   "exit roundabout": "kör ut ur rondell",
   "exit rotary": "kör ut ur rondell",
   // turns
@@ -543,24 +543,54 @@ const translateArray = {
   "slight left": "vänster",
   "left": "vänster",
   "sharp left": "vänster",
+  1: "första utfarten",
+  2: "andra utfarten",
+  3: "tredje utfarten",
+  4: "fjärde utfarten",
+  5: "femte utfarten",
 };
 
 function createTurnHint(routeStep) {
+  const destinations = routeStep.destinations;
   const maneuverType = routeStep.maneuver.type;
   const maneuverModifier = routeStep.maneuver.modifier;
+  const roundaboutExit = routeStep.maneuver.exit;
+  const maneuverName = routeStep.name;
+  const rampExit = routeStep.exits;
 
   if (!translateArray.hasOwnProperty(maneuverType)) {
     return
   }
 
-  const turnString = [
-    routeStep.name,
-    translateArray[routeStep.maneuver.type],
-    translateArray[routeStep.maneuver.modifier],
-    routeStep.exits,
-  ];
+  const turnString = [maneuverName];
 
-  console.log(routeStep)
+  if (["exit roundabout", "exit rotary"].includes(maneuverType)) {
+    turnString.push(translateArray[maneuverType]);
+    turnString.push(translateArray[roundaboutExit]);
+  }
+
+  if (["roundabout turn"].includes(maneuverType)) {
+    turnString.push(translateArray[maneuverType]);
+    turnString.push(translateArray[maneuverModifier]);
+  }
+
+  if (["arrive"].includes(maneuverType)) {
+    turnString.unshift(translateArray[maneuverType]);
+  }
+
+  if (["turn", "end of road"].includes(maneuverType)) {
+    turnString.push(translateArray[maneuverType]);
+    turnString.push(translateArray[maneuverModifier]);
+  }
+
+  if (["on ramp", "off ramp"].includes(maneuverType)) {
+    turnString.push(translateArray[maneuverType]);
+    turnString.push(destinations);
+    turnString.push(rampExit);
+  }
+  console.log(routeStep);
+  console.log(maneuverType);
+
   const stepManeuverCoordinates = fromLonLat(routeStep.maneuver.location);
   const marker = new Feature({
     name: turnString.join(" ").trim(),
@@ -905,7 +935,7 @@ function routeMe() {
       }).then(result => {
         console.log(result)
         const format = new GeoJSON();
-        const newGeometry = format.readFeatures(result.routes[0].geometry, {
+        const newGeometry = format.readFeature(result.routes[0].geometry, {
           dataProjection: "EPSG:4326",
           featureProjection: "EPSG:3857"
         });
@@ -915,21 +945,14 @@ function routeMe() {
         document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
         document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
 
-        const newGeometryCoordinates = newGeometry[0].getGeometry().getCoordinates();
+        const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
         newGeometryCoordinates.push(fromLonLat(coordsString[coordsString.length - 1]));
         routeLineString.setCoordinates([newGeometryCoordinates]);
 
         const legs = result.routes[0].legs;
-        // routeLineLayer.getSource().clear();
         for (const leg of legs) {
           for (const step of leg.steps) {
             createTurnHint(step);
-
-            // const newGeometry = format.readFeatures(step.geometry, {
-            //   dataProjection: "EPSG:4326",
-            //   featureProjection: "EPSG:3857"
-            // });
-            // routeLineLayer.getSource().addFeature(newGeometry[0]);
           }
         }
       });
