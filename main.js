@@ -196,8 +196,10 @@ document.getElementById("exportRouteButton").onclick = function () {
   routePointsLayer.getSource().forEachFeature(function (feature) {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
   });
-  if (routePoints.length > 1) {
+  if (routePoints.length > 0) {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
+  }
+  if (routePoints.length > 1) {
     trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.getLineString(0).simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
   }
 
