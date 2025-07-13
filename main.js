@@ -789,9 +789,11 @@ function featureLengthString(featureLength) {
 }
 
 JSON.parse(localStorage.drawFeatures || "[]").forEach(function (element) {
-  drawLayer.getSource().addFeature(new Feature({
-    geometry: new LineString(element)
-  }));
+  if (element.length > 0) {
+    drawLayer.getSource().addFeature(new Feature({
+      geometry: new LineString(element)
+    }));
+  }
 });
 
 const view = new View({
