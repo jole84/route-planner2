@@ -1016,14 +1016,19 @@ function openContextPopup(coordinate) {
   const coordinatePixel = map.getPixelFromCoordinate(coordinate);
   contextPopup.setPosition(coordinate);
   contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
-
+  const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(coordinate);
 
   document.getElementById("removeDrawing").style.display = "none";
+  document.getElementById("editPoiButton").style.display = "none";
   // document.getElementById("flipStraight").style.display = "none";
 
   let drawingToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
     console.log(feature.getProperties());
+    if (feature.get("poi")) {
+      document.getElementById("editPoiButton").innerHTML = 'Byt namn på POI "' + closestPoi.get("name") + '"';
+      document.getElementById("editPoiButton").style.display = "unset";      
+    }
     if (feature.get("drawing")) {
       drawingToRemove = feature;
       document.getElementById("removeDrawing").style.display = "unset";
@@ -1053,7 +1058,6 @@ function openContextPopup(coordinate) {
     document.getElementById("removeRoutePosition").style.display = "none";
   }
 
-  const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(coordinate);
   if (closestPoi) {
     const distanceToClosestPoi = getPixelDistance(map.getPixelFromCoordinate(closestPoi.getGeometry().getCoordinates()), coordinatePixel);
     if (distanceToClosestPoi < 40) {
@@ -1163,6 +1167,16 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
   poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
 });
 
+document.getElementById("editPoiButton").addEventListener("click", function () {
+  const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
+  poiPosition = closestPoi.getGeometry().getCoordinates();
+  menuDivcontent.replaceChildren(savePoiNameInput);
+  contextPopup.setPosition();
+  poiFileName.select();
+  poiFileName.value = closestPoi.get("name");
+  poiLayer.getSource().removeFeature(closestPoi);
+});
+
 document.getElementById("savePoiOkButton").addEventListener("click", function () {
   addPoi(poiPosition, poiFileName.value || poiFileName.placeholder);
   menuDivcontent.replaceChildren();
@@ -1173,6 +1187,7 @@ function addPoi(poiPosition, name) {
   const poiMarker = new Feature({
     geometry: new Point(poiPosition),
     name: name,
+    poi: true,
   });
   poiLayer.getSource().addFeature(poiMarker);
 }
