@@ -922,11 +922,20 @@ function routeMeOSR() {
     body: JSON.stringify({
       coordinates: coordsString,
       maneuvers: true,
+      // skip_segments: [1],
+      // options: {
+        // avoid_features: ["highways"],
+        // round_trip: {
+        //   length: 100000,
+        //   points: 2,
+        //   seed: 5
+        // }
+      // },
     })
   }).then(response => {
     return response.json();
   }).then(result => {
-    console.log(result)
+    console.log(result);
     // destinationCoordinates[destinationCoordinates.length - 1] = result.features[0].geometry.coordinates[result.features[0].geometry.coordinates.length - 1];
     const format = new GeoJSON();
     const newGeometry = format.readFeature(result.features[0].geometry, {
