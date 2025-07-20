@@ -817,7 +817,7 @@ drawLayer.getSource().addEventListener("change", function () {
 });
 
 function featureLengthString(featureLength) {
-  return featureLength > 1000 ? (featureLength / 1000).toFixed(3) + "km" : Math.round(featureLength) + "m";
+  return featureLength > 1000 ? (featureLength / 1000).toFixed(2) + "km" : Math.round(featureLength) + "m";
 }
 
 JSON.parse(localStorage.drawFeatures || "[]").forEach(function (element) {
