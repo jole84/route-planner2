@@ -8,7 +8,6 @@ import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
 import Collection from 'ol/Collection.js';
 import { Polygon, MultiPolygon, Point, MultiLineString, LineString } from 'ol/geom';
-// import RegularShape from 'ol/style/RegularShape.js';
 import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
@@ -16,6 +15,10 @@ import TileWMS from "ol/source/TileWMS.js";
 import { getLength } from 'ol/sphere';
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
+import VectorTileLayer from 'ol/layer/VectorTile.js';
+import VectorTileSource from 'ol/source/VectorTile.js';
+import MVT from 'ol/format/MVT.js';
+import { styleStuff } from "./styleTileFunctions.js"
 
 const addPositionButton = document.getElementById("addPositionButton");
 const removePositionButton = document.getElementById("removePositionButton");
@@ -345,6 +348,17 @@ const slitlagerkarta_nedtonad = new TileLayer({
   maxZoom: 15.5,
   visible: false,
   useInterimTilesOnError: false,
+});
+
+const newTileLayer = new VectorTileLayer({
+  source: new VectorTileSource({
+    format: new MVT(),
+    // url: './tiles/{z}/{x}/{y}.pbf',
+    url: 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
+    minZoom: 6,
+    maxZoom: 14,
+  }),
+  style: styleStuff
 });
 
 const ortofoto = new TileLayer({
@@ -841,6 +855,7 @@ const map = new Map({
   layers: [
     slitlagerkarta,
     slitlagerkarta_nedtonad,
+    newTileLayer,
     ortofoto,
     topoweb,
     osm,
@@ -873,6 +888,7 @@ function switchMap() {
   layerSelector.value = localStorage.routePlannerMapMode;
   slitlagerkarta.setVisible(false);
   slitlagerkarta_nedtonad.setVisible(false);
+  newTileLayer.setVisible(false);
   ortofoto.setVisible(false);
   topoweb.setVisible(false);
   osm.setVisible(false);
@@ -893,6 +909,8 @@ function switchMap() {
     ortofoto.setMaxZoom(20);
   } else if (localStorage.routePlannerMapMode == 4) {
     osm.setVisible(true);
+  } else if (localStorage.routePlannerMapMode == 5) {
+    newTileLayer.setVisible(true);
   }
 }
 document.getElementById("layerSelector").addEventListener("change", function () {
