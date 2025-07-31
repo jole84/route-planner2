@@ -358,6 +358,7 @@ const newTileLayer = new VectorTileLayer({
     minZoom: 6,
     maxZoom: 14,
   }),
+  newTileLayer: true,
   style: styleStuff
 });
 
@@ -910,6 +911,10 @@ function switchMap() {
   } else if (localStorage.routePlannerMapMode == 4) {
     osm.setVisible(true);
   } else if (localStorage.routePlannerMapMode == 5) {
+    sessionStorage.vagkarta = false;
+    newTileLayer.setVisible(true);
+  } else if (localStorage.routePlannerMapMode == 6) {
+    sessionStorage.vagkarta = true;
     newTileLayer.setVisible(true);
   }
 }
@@ -942,12 +947,12 @@ function routeMeOSR() {
       maneuvers: true,
       // skip_segments: [1],
       // options: {
-        // avoid_features: ["highways"],
-        // round_trip: {
-        //   length: 100000,
-        //   points: 2,
-        //   seed: 5
-        // }
+      // avoid_features: ["highways"],
+      // round_trip: {
+      //   length: 100000,
+      //   points: 2,
+      //   seed: 5
+      // }
       // },
     })
   }).then(response => {
@@ -1158,7 +1163,11 @@ map.addEventListener("click", function (event) {
 });
 
 map.on("pointermove", function (evt) {
-  const hit = map.hasFeatureAtPixel(evt.pixel);
+  const hit = map.hasFeatureAtPixel(evt.pixel, {
+    layerFilter: function (layerCandidate) {
+      return !layerCandidate.get("newTileLayer");
+    }
+  });
   if (hit) {
     this.getTargetElement().style.cursor = "pointer";
   } else {
