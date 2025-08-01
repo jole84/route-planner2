@@ -359,7 +359,8 @@ const newTileLayer = new VectorTileLayer({
     maxZoom: 14,
   }),
   newTileLayer: true,
-  style: styleStuff
+  style: styleStuff,
+  declutter: true,
 });
 
 const ortofoto = new TileLayer({
