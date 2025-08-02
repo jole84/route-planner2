@@ -896,13 +896,13 @@ function switchMap() {
   osm.setVisible(false);
 
   if (localStorage.routePlannerMapMode == 0) {
-    slitlagerkarta.setVisible(true);
-    ortofoto.setVisible(true);
-    ortofoto.setMinZoom(15.5);
+    sessionStorage.vagkarta = false;
+    newTileLayer.setVisible(true);
+    newTileLayer.getSource().refresh({ force: true });
   } else if (localStorage.routePlannerMapMode == 1) {
-    slitlagerkarta_nedtonad.setVisible(true);
-    ortofoto.setVisible(true);
-    ortofoto.setMinZoom(15.5);
+    sessionStorage.vagkarta = true;
+    newTileLayer.setVisible(true);
+    newTileLayer.getSource().refresh({ force: true });
   } else if (localStorage.routePlannerMapMode == 2) {
     topoweb.setVisible(true);
   } else if (localStorage.routePlannerMapMode == 3) {
@@ -912,11 +912,13 @@ function switchMap() {
   } else if (localStorage.routePlannerMapMode == 4) {
     osm.setVisible(true);
   } else if (localStorage.routePlannerMapMode == 5) {
-    sessionStorage.vagkarta = false;
-    newTileLayer.setVisible(true);
+    slitlagerkarta.setVisible(true);
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(15.5);
   } else if (localStorage.routePlannerMapMode == 6) {
-    sessionStorage.vagkarta = true;
-    newTileLayer.setVisible(true);
+    slitlagerkarta_nedtonad.setVisible(true);
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(15.5);
   }
 }
 document.getElementById("layerSelector").addEventListener("change", function () {
