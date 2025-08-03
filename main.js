@@ -358,6 +358,7 @@ const newTileLayer = new VectorTileLayer({
     minZoom: 6,
     maxZoom: 14,
   }),
+  maxZoom: 15.5,
   newTileLayer: true,
   style: styleStuff,
   declutter: true,
@@ -899,10 +900,14 @@ function switchMap() {
     sessionStorage.vagkarta = false;
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(15.5);
   } else if (localStorage.routePlannerMapMode == 1) {
     sessionStorage.vagkarta = true;
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
+    ortofoto.setVisible(true);
+    ortofoto.setMinZoom(15.5);
   } else if (localStorage.routePlannerMapMode == 2) {
     topoweb.setVisible(true);
   } else if (localStorage.routePlannerMapMode == 3) {
