@@ -1123,7 +1123,7 @@ function openContextPopup(coordinate) {
       document.getElementById("removeGpxFeature").style.display = "unset";
     }
     document.getElementById("removeDrawing").onclick = function () {
-      drawLayer.getSource().removeFeature(feature);
+      drawLayer.getSource().removeFeature(drawingToRemove);
       contextPopup.setPosition();
     }
     document.getElementById("removeGpxFeature").onclick = function () {
