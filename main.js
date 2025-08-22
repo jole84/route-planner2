@@ -897,13 +897,11 @@ function switchMap() {
   osm.setVisible(false);
 
   if (localStorage.routePlannerMapMode == 0) {
-    sessionStorage.vagkarta = false;
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
     ortofoto.setVisible(true);
     ortofoto.setMinZoom(15.5);
   } else if (localStorage.routePlannerMapMode == 1) {
-    sessionStorage.vagkarta = true;
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
     ortofoto.setVisible(true);
