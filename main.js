@@ -50,7 +50,7 @@ document.getElementById("routeModeSelector").addEventListener("change", function
 
 localStorage.centerCoordinate = localStorage.centerCoordinate || "[1700000, 8500000]";
 localStorage.centerZoom = localStorage.centerZoom || 7;
-localStorage.routePlannerMapMode = localStorage.routePlannerMapMode || 0; // default map
+localStorage.mapMode = localStorage.mapMode || 0; // default map
 
 document.getElementById("openInfoButton").addEventListener("click", () => {
   menuDivcontent.replaceChildren(menuItems);
@@ -888,7 +888,7 @@ function getPixelDistance(pixel, pixel2) {
 }
 
 function switchMap() {
-  layerSelector.value = localStorage.routePlannerMapMode;
+  layerSelector.value = localStorage.mapMode;
   slitlagerkarta.setVisible(false);
   slitlagerkarta_nedtonad.setVisible(false);
   newTileLayer.setVisible(false);
@@ -896,36 +896,36 @@ function switchMap() {
   topoweb.setVisible(false);
   osm.setVisible(false);
 
-  if (localStorage.routePlannerMapMode == 0) {
+  if (localStorage.mapMode == 0) {
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
     ortofoto.setVisible(true);
     ortofoto.setMinZoom(15.5);
-  } else if (localStorage.routePlannerMapMode == 1) {
+  } else if (localStorage.mapMode == 1) {
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
     ortofoto.setVisible(true);
     ortofoto.setMinZoom(15.5);
-  } else if (localStorage.routePlannerMapMode == 2) {
+  } else if (localStorage.mapMode == 2) {
     topoweb.setVisible(true);
-  } else if (localStorage.routePlannerMapMode == 3) {
+  } else if (localStorage.mapMode == 3) {
     ortofoto.setVisible(true);
     ortofoto.setMinZoom(1);
     ortofoto.setMaxZoom(20);
-  } else if (localStorage.routePlannerMapMode == 4) {
+  } else if (localStorage.mapMode == 4) {
     osm.setVisible(true);
-  } else if (localStorage.routePlannerMapMode == 5) {
+  } else if (localStorage.mapMode == 5) {
     slitlagerkarta.setVisible(true);
     ortofoto.setVisible(true);
     ortofoto.setMinZoom(15.5);
-  } else if (localStorage.routePlannerMapMode == 6) {
+  } else if (localStorage.mapMode == 6) {
     slitlagerkarta_nedtonad.setVisible(true);
     ortofoto.setVisible(true);
     ortofoto.setMinZoom(15.5);
   }
 }
 document.getElementById("layerSelector").addEventListener("change", function () {
-  localStorage.routePlannerMapMode = layerSelector.value;
+  localStorage.mapMode = layerSelector.value;
   switchMap();
 });
 switchMap();
@@ -1108,7 +1108,7 @@ function openContextPopup(coordinate) {
 
   let drawingToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
-    console.log(feature.getProperties());
+    console.table(feature.getProperties());
     if (feature.get("poi")) {
       document.getElementById("editPoiButton").innerHTML = 'Byt namn på POI "' + closestPoi.get("name") + '"';
       document.getElementById("editPoiButton").style.display = "unset";
