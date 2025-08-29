@@ -358,7 +358,7 @@ const newTileLayer = new VectorTileLayer({
     minZoom: 6,
     maxZoom: 14,
   }),
-  maxZoom: 15.5,
+  maxZoom: 16.5,
   newTileLayer: true,
   style: styleStuff,
   declutter: true,
@@ -372,7 +372,7 @@ const ortofoto = new TileLayer({
       TILED: true,
     },
   }),
-  minZoom: 15.5,
+  minZoom: 16.5,
 });
 
 const topoweb = new TileLayer({
@@ -900,12 +900,12 @@ function switchMap() {
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
     ortofoto.setVisible(true);
-    ortofoto.setMinZoom(15.5);
+    ortofoto.setMinZoom(16.5);
   } else if (localStorage.mapMode == 1) {
     newTileLayer.setVisible(true);
     newTileLayer.getSource().refresh({ force: true });
     ortofoto.setVisible(true);
-    ortofoto.setMinZoom(15.5);
+    ortofoto.setMinZoom(16.5);
   } else if (localStorage.mapMode == 2) {
     topoweb.setVisible(true);
   } else if (localStorage.mapMode == 3) {
