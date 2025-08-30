@@ -711,7 +711,7 @@ function gpxStyle(feature) {
     return new Style({
       stroke: new Stroke({
         // color: [0, 0, 255, 0.6],
-        color: multipleColors[feature.getId()],
+        color: multipleColors[feature.getId()] || [Math.random() * 255, Math.random() * 255, Math.random() * 255, 0.6],
         width: 10,
       }),
     });
@@ -745,6 +745,7 @@ function gpxStyle(feature) {
 const gpxLayer = new VectorLayer({
   source: new VectorSource(),
   style: gpxStyle,
+  declutter: true,
 });
 
 let lineStringId = 0;
