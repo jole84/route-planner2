@@ -203,7 +203,7 @@ document.getElementById("exportRouteButton").onclick = function () {
     linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
   }
   if (routePoints.length > 1) {
-    trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.getLineString(0).simplify(50).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
+    trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.getLineString(0).simplify(25).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
   }
 
   poiLayer.getSource().forEachFeature(function (feature) {
