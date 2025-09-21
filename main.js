@@ -146,6 +146,7 @@ function fileLoader(fileData) {
       featureProjection: "EPSG:3857",
     });
     gpxFeatures.forEach(feature => {
+      console.log(feature.getGeometry().getType());
       if (loadAsProject || loadAsRoute) {
         if (feature.get("drawing")) {
           drawLayer.getSource().addFeature(feature);
@@ -1184,8 +1185,10 @@ map.on("pointermove", function (evt) {
 
 document.addEventListener("mouseup", function () {
   if (newDrawFeature.getGeometry().getCoordinates().length > 0) {
-    drawLayer.getSource().addFeature(newDrawFeature.clone())
-    newDrawFeature.getGeometry().setCoordinates([])
+    const newDrawFeatureCopy = newDrawFeature.clone();
+    newDrawFeatureCopy.setGeometry(newDrawFeatureCopy.getGeometry().simplify(20));
+    drawLayer.getSource().addFeature(newDrawFeatureCopy);
+    newDrawFeature.getGeometry().setCoordinates([]);
   }
 });
 
