@@ -73,14 +73,10 @@ document.getElementById("menuDivCloseButton").addEventListener("click", () => {
 // });
 // document.getElementById("mouseClickAdd").checked = JSON.parse(localStorage.mouseClickAdd || "false");
 
-function getFileFormat(fileExtention) {
-  if (fileExtention === "gpx") {
-    return new GPX();
-  } else if (fileExtention === "kml") {
-    return new KML({ extractStyles: false });
-  } else if (fileExtention === "geojson") {
-    return new GeoJSON();
-  }
+const fileFormats = {
+  "gpx": new GPX(),
+  "kml": new KML({ extractStyles: false }),
+  "geojson": new GeoJSON(),
 }
 
 // PWA file browser file handler
@@ -140,7 +136,7 @@ function fileLoader(fileData) {
   const reader = new FileReader();
   reader.readAsText(fileData, "UTF-8");
   reader.onload = function (evt) {
-    const fileFormat = getFileFormat(fileData.name.replace(".gpx.txt", ".gpx").split(".").pop().toLowerCase());
+    const fileFormat = fileFormats[fileData.name.toLowerCase().replace(".gpx.txt", ".gpx").split(".").pop()];
     const gpxFeatures = fileFormat.readFeatures(evt.target.result, {
       dataProjection: "EPSG:4326",
       featureProjection: "EPSG:3857",
