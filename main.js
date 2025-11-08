@@ -567,25 +567,29 @@ const translateArray = {
 };
 
 function createTurnHint(routeStep) {
+  console.log(routeStep);
   const destinations = routeStep.destinations;
   const maneuverType = routeStep.maneuver.type;
   const maneuverModifier = routeStep.maneuver.modifier;
   const roundaboutExit = routeStep.maneuver.exit;
   const maneuverName = routeStep.name;
   const rampExit = routeStep.exits;
+  const ref = routeStep.ref;
 
   if (!translateArray.hasOwnProperty(maneuverType)) {
     return
   }
 
-  const turnString = [maneuverName];
+  const turnString = [];
 
   if (["exit roundabout", "exit rotary"].includes(maneuverType)) {
+    turnString.push(destinations);
     turnString.push(translateArray[maneuverType]);
     turnString.push(translateArray[roundaboutExit]);
   }
 
   if (["roundabout turn"].includes(maneuverType)) {
+    turnString.push(destinations);
     turnString.push(translateArray[maneuverType]);
     turnString.push(translateArray[maneuverModifier]);
   }
@@ -603,9 +607,9 @@ function createTurnHint(routeStep) {
     turnString.push(translateArray[maneuverType]);
     turnString.push(destinations);
     turnString.push(rampExit);
+    turnString.push(ref);
   }
-  console.log(routeStep);
-  console.log(maneuverType);
+  turnString.push(maneuverName);
 
   const stepManeuverCoordinates = fromLonLat(routeStep.maneuver.location);
   const marker = new Feature({
