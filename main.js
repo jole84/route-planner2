@@ -326,27 +326,6 @@ document.getElementById("reverseRoute").addEventListener("click", function () {
   routeMe();
 });
 
-const slitlagerkarta = new TileLayer({
-  source: new XYZ({
-    url: "https://jole84.se/slitlagerkarta/{z}/{x}/{y}.jpg",
-    minZoom: 6,
-    maxZoom: 14,
-  }),
-  maxZoom: 15.5,
-  useInterimTilesOnError: false,
-});
-
-const slitlagerkarta_nedtonad = new TileLayer({
-  source: new XYZ({
-    url: "https://jole84.se/slitlagerkarta_nedtonad/{z}/{x}/{y}.jpg",
-    minZoom: 6,
-    maxZoom: 14,
-  }),
-  maxZoom: 15.5,
-  visible: false,
-  useInterimTilesOnError: false,
-});
-
 const newTileLayer = new VectorTileLayer({
   source: new VectorTileSource({
     format: new MVT(),
@@ -858,8 +837,6 @@ const view = new View({
 const map = new Map({
   target: "map",
   layers: [
-    slitlagerkarta,
-    slitlagerkarta_nedtonad,
     newTileLayer,
     ortofoto,
     topoweb,
@@ -891,8 +868,6 @@ function getPixelDistance(pixel, pixel2) {
 
 function switchMap() {
   layerSelector.value = localStorage.mapMode;
-  slitlagerkarta.setVisible(false);
-  slitlagerkarta_nedtonad.setVisible(false);
   newTileLayer.setVisible(false);
   ortofoto.setVisible(false);
   topoweb.setVisible(false);
@@ -916,14 +891,6 @@ function switchMap() {
     ortofoto.setMaxZoom(20);
   } else if (localStorage.mapMode == 4) {
     osm.setVisible(true);
-  } else if (localStorage.mapMode == 5) {
-    slitlagerkarta.setVisible(true);
-    ortofoto.setVisible(true);
-    ortofoto.setMinZoom(15.5);
-  } else if (localStorage.mapMode == 6) {
-    slitlagerkarta_nedtonad.setVisible(true);
-    ortofoto.setVisible(true);
-    ortofoto.setMinZoom(15.5);
   }
 }
 document.getElementById("layerSelector").addEventListener("change", function () {
