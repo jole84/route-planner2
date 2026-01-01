@@ -8,19 +8,19 @@
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "https://jole84.se/84.svg",
+            "src": "https://jole84.se/images/84.svg",
             "type": "image/svg",
             "sizes": "any",
             "purpose": "any"
         },
         {
-            "src": "https://jole84.se/84.png",
+            "src": "https://jole84.se/images/84.png",
             "type": "image/png",
             "sizes": "any",
             "purpose": "any"
         },
         {
-            "src": "https://jole84.se/84.svg",
+            "src": "https://jole84.se/images/84.svg",
             "type": "image/svg",
             "sizes": "567x567",
             "purpose": "any"
@@ -28,14 +28,14 @@
     ],
     "screenshots": [
         {
-            "src": "https://jole84.se/jole84_nav-app_narrow.png",
+            "src": "https://jole84.se/images/jole84_nav-app_narrow.png",
             "type": "image/png",
             "form_factor": "narrow",
             "sizes": "1442x3202",
             "label": "Jole84 nav-app screenshot narrow"
         },
         {
-            "src": "https://jole84.se/jole84_nav-app_wide.png",
+            "src": "https://jole84.se/images/jole84_nav-app_wide.png",
             "type": "image/png",
             "form_factor": "wide",
             "sizes": "3203x1442",

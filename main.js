@@ -389,21 +389,21 @@ const routePointStyle = {
     image: new Icon({
       anchor: [0.5, 1],
       opacity: 0.85,
-      src: "https://jole84.se/start-marker.svg",
+      src: "https://jole84.se/images/start-marker.svg",
     }),
   }),
   midPoint: new Style({
     image: new Icon({
       anchor: [0.5, 1],
       opacity: 0.85,
-      src: "https://jole84.se/marker.svg",
+      src: "https://jole84.se/images/marker.svg",
     }),
   }),
   endPoint: new Style({
     image: new Icon({
       anchor: [0.5, 1],
       opacity: 0.85,
-      src: "https://jole84.se/end-marker.svg",
+      src: "https://jole84.se/images/end-marker.svg",
     }),
   }),
 }
@@ -605,7 +605,7 @@ const poiLayer = new VectorLayer({
       image: new Icon({
         anchor: [0.5, 1],
         opacity: 0.85,
-        src: "https://jole84.se/poi-marker.svg",
+        src: "https://jole84.se/images/poi-marker.svg",
       }),
       text: new Text({
         text: feature.get("name"),
@@ -661,7 +661,7 @@ function gpxStyle(feature) {
     return new Style({
       image: new Icon({
         anchor: [0.5, 1],
-        src: "https://jole84.se/poi-marker.svg",
+        src: "https://jole84.se/images/poi-marker.svg",
         opacity: 0.8,
         scale: 0.8,
       }),
