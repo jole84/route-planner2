@@ -804,14 +804,20 @@ const newDrawFeature = new Feature({
 });
 newDrawFeature.setId(0);
 drawLayer.getSource().addFeature(newDrawFeature);
-drawLayer.getSource().addEventListener("change", function () {
+drawLayer.getSource().addEventListener("addfeature", function () {
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
-    feature.set("drawing", true);
-    feature.set("name", featureLengthString(getLength(feature.getGeometry())))
-    drawFeatures.push(feature.getGeometry().getCoordinates());
+    if (feature.getId() != 0) {
+      feature.set("drawing", true);
+      feature.set("name", featureLengthString(getLength(feature.getGeometry())))
+      drawFeatures.push(feature.getGeometry().getCoordinates());
+    }
   });
   localStorage.drawFeatures = JSON.stringify(drawFeatures);
+});
+
+newDrawFeature.addEventListener("change", function () {
+  newDrawFeature.set("name", featureLengthString(getLength(newDrawFeature.getGeometry())));
 });
 
 function featureLengthString(featureLength) {
