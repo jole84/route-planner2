@@ -56,6 +56,12 @@ document.getElementById("openInfoButton").addEventListener("click", () => {
   menuDivcontent.replaceChildren(menuItems);
   document.getElementById("enableVoiceHint").checked = enableVoiceHint;
 });
+let enableTouchControls = document.getElementById("enableTouchControls").checked;
+document.getElementById("enableTouchControls").addEventListener("change", function () {
+  enableTouchControls = document.getElementById("enableTouchControls").checked;
+  document.getElementById("crosshair").style.display = enableTouchControls ? "unset" : "none";
+  document.getElementById("lowerRightGroup").style.display = enableTouchControls ? "inline" : "none";
+});
 document.getElementById("enableVoiceHint").addEventListener("change", function () {
   enableVoiceHint = document.getElementById("enableVoiceHint").checked;
   routeMe();
@@ -1041,7 +1047,7 @@ document.getElementById("contextPopupCloser").addEventListener("click", function
 });
 
 map.addEventListener("contextmenu", function (event) {
-  if (!window.matchMedia("(pointer: coarse)").matches) {
+  if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls) {
     if (!event.originalEvent.altKey) {
       event.preventDefault();
       const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(event.coordinate);
@@ -1160,7 +1166,7 @@ function openContextPopup(coordinate) {
 }
 
 map.addEventListener("click", function (event) {
-  if (!window.matchMedia("(pointer: coarse)").matches) {
+  if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls) {
     if (contextPopup.getPosition()) {
       // hide if visible
       contextPopup.setPosition();
