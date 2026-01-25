@@ -604,8 +604,10 @@ const poiLayer = new VectorLayer({
     return new Style({
       image: new Icon({
         anchor: [0.5, 1],
-        opacity: 0.85,
-        src: "https://jole84.se/images/poi-marker.svg",
+        opacity: 0.9,
+        src: "https://jole84.se/images/white-marker.svg",
+        color: "magenta",
+        scale: 0.8,
       }),
       text: new Text({
         text: feature.get("name"),
@@ -661,8 +663,9 @@ function gpxStyle(feature) {
     return new Style({
       image: new Icon({
         anchor: [0.5, 1],
-        src: "https://jole84.se/images/poi-marker.svg",
-        opacity: 0.8,
+        src: "https://jole84.se/images/white-marker.svg",
+        color: "red",
+        opacity: 0.9,
         scale: 0.8,
       }),
       text: new Text({
@@ -1119,6 +1122,9 @@ function openContextPopup(coordinate) {
         gpxFeatureToRemove.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
           routePointsLineString.appendCoordinate(coordinate);
         });
+      }
+      if (gpxFeatureToRemove.getGeometry().getType() === "Point") {
+        poiLayer.getSource().addFeature(gpxFeatureToRemove);
       }
       gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
       routeMe();
