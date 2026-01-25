@@ -1095,8 +1095,8 @@ function openContextPopup(coordinate) {
   let drawingToRemove;
   let gpxFeatureToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
-    console.table(feature.getProperties());
-    if (feature.get("poi")) {
+    console.log(feature.getProperties());
+    if (feature.get("poi") && closestPoi) {
       document.getElementById("editPoiButton").innerHTML = 'Byt namn på POI "' + closestPoi.get("name") + '"';
       document.getElementById("editPoiButton").style.display = "unset";
     }
@@ -1107,6 +1107,7 @@ function openContextPopup(coordinate) {
     }
     if (feature.get("gpxFeature")) {
       gpxFeatureToRemove = feature;
+      document.getElementById("removeGpxFeature").innerHTML = feature.get("name") ? 'Ta bort "' + feature.get("name") + '"' : "Ta bort GPX";
       document.getElementById("removeGpxFeature").style.display = "unset";
       document.getElementById("convertGpxFeature").style.display = "unset";
     }
@@ -1119,6 +1120,7 @@ function openContextPopup(coordinate) {
       contextPopup.setPosition();
     }
     document.getElementById("convertGpxFeature").onclick = function () {
+      gpxFeatureToRemove.set("gpxFeature", false);
       if (gpxFeatureToRemove.getGeometry().getType() === "LineString") {
         gpxFeatureToRemove.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
           routePointsLineString.appendCoordinate(coordinate);
