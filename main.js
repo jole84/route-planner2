@@ -112,13 +112,13 @@ async function getTheFile() {
     fileLoader(fileData);
   }
 }
-document.getElementById("loadRouteButton").addEventListener("click", evt => {
-  loadAsRoute = true;
+document.getElementById("loadProjectButton").addEventListener("click", evt => {
+  loadAsProject = true;
   getTheFile();
 });
 
 document.getElementById("selectFileButton").addEventListener("click", evt => {
-  loadAsRoute = false;
+  loadAsProject = false;
   getTheFile();
 });
 
@@ -130,9 +130,8 @@ document.getElementById("selectFileButton").addEventListener("click", evt => {
 // menuDivcontent.replaceChildren();
 // });
 
-let loadAsRoute = false;
+let loadAsProject = false;
 function fileLoader(fileData) {
-  const loadAsProject = fileData.name.startsWith("Projekt_");
   const reader = new FileReader();
   reader.readAsText(fileData, "UTF-8");
   reader.onload = function (evt) {
@@ -143,7 +142,7 @@ function fileLoader(fileData) {
     });
     gpxFeatures.forEach(feature => {
       console.log(feature.getGeometry().getType());
-      if (loadAsProject || loadAsRoute) {
+      if (loadAsProject) {
         if (feature.get("drawing")) {
           drawLayer.getSource().addFeature(feature);
         } else if (feature.get("routePointsLineString")) {
@@ -245,9 +244,10 @@ async function saveFile(data, fileName) {
     // close the file and write the contents to disk.
     await writableStream.close();
 
-    alert("Fil sparad!");
+    // alert("Fil sparad!");
   } catch (e) {
-    alert("Något gick snett :( \n" + e.message);
+    // alert("Något gick snett :( \n" + e.message);
+    console.log(e.message)
   }
 }
 
@@ -779,7 +779,7 @@ const drawLayer = new VectorLayer({
         width: 10,
       }),
       text: new Text({
-        text: feature.get("name"),
+        text: "Markering\n(" + feature.get("name") + ")",
         font: "14px Roboto,monospace",
         textAlign: "left",
         offsetX: 10,
@@ -804,7 +804,7 @@ const newDrawFeature = new Feature({
 });
 newDrawFeature.setId(0);
 drawLayer.getSource().addFeature(newDrawFeature);
-drawLayer.getSource().addEventListener("addfeature", function () {
+drawLayer.getSource().addEventListener("change", function () {
   const drawFeatures = [];
   drawLayer.getSource().forEachFeature(function (feature) {
     if (feature.getId() != 0) {
@@ -1078,10 +1078,13 @@ function openContextPopup(coordinate) {
   const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(coordinate);
 
   document.getElementById("removeDrawing").style.display = "none";
+  document.getElementById("removeGpxFeature").style.display = "none";
+  document.getElementById("convertGpxFeature").style.display = "none";
   document.getElementById("editPoiButton").style.display = "none";
   // document.getElementById("flipStraight").style.display = "none";
 
   let drawingToRemove;
+  let gpxFeatureToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
     console.table(feature.getProperties());
     if (feature.get("poi")) {
@@ -1090,17 +1093,35 @@ function openContextPopup(coordinate) {
     }
     if (feature.get("drawing")) {
       drawingToRemove = feature;
+      document.getElementById("removeDrawing").innerHTML = 'Ta bort markering "' + feature.get("name") + '"';
       document.getElementById("removeDrawing").style.display = "unset";
     }
     if (feature.get("gpxFeature")) {
+      gpxFeatureToRemove = feature;
       document.getElementById("removeGpxFeature").style.display = "unset";
+      document.getElementById("convertGpxFeature").style.display = "unset";
     }
     document.getElementById("removeDrawing").onclick = function () {
       drawLayer.getSource().removeFeature(drawingToRemove);
       contextPopup.setPosition();
     }
     document.getElementById("removeGpxFeature").onclick = function () {
-      gpxLayer.getSource().removeFeature(feature);
+      gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
+      contextPopup.setPosition();
+    }
+    document.getElementById("convertGpxFeature").onclick = function () {
+      if (gpxFeatureToRemove.getGeometry().getType() === "LineString") {
+        gpxFeatureToRemove.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
+          routePointsLineString.appendCoordinate(coordinate);
+        });
+      }
+      if (gpxFeatureToRemove.getGeometry().getType() === "MultiLineString") {
+        gpxFeatureToRemove.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
+          routePointsLineString.appendCoordinate(coordinate);
+        });
+      }
+      gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
+      routeMe();
       contextPopup.setPosition();
     }
   });
