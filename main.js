@@ -671,7 +671,7 @@ function gpxStyle(feature) {
         anchor: [0.5, 1],
         src: "https://jole84.se/images/white-marker.svg",
         color: "red",
-        opacity: 0.9,
+        opacity: 0.8,
         scale: 0.8,
       }),
       text: new Text({
@@ -761,23 +761,23 @@ let lineStringId = 0;
 //   gpxLayer.getSource().addFeature(newFeature);
 // });
 
-function newGeom(featureType, coordinates) {
-  if (featureType == "Point") {
-    return new Point(coordinates);
-  }
-  if (featureType == "LineString") {
-    return new LineString(coordinates);
-  }
-  if (featureType == "MultiLineString") {
-    return new MultiLineString(coordinates);
-  }
-  if (featureType == "Polygon") {
-    return new Polygon(coordinates);
-  }
-  if (featureType == "MultiPolygon") {
-    return new MultiPolygon(coordinates);
-  }
-}
+// function newGeom(featureType, coordinates) {
+//   if (featureType == "Point") {
+//     return new Point(coordinates);
+//   }
+//   if (featureType == "LineString") {
+//     return new LineString(coordinates);
+//   }
+//   if (featureType == "MultiLineString") {
+//     return new MultiLineString(coordinates);
+//   }
+//   if (featureType == "Polygon") {
+//     return new Polygon(coordinates);
+//   }
+//   if (featureType == "MultiPolygon") {
+//     return new MultiPolygon(coordinates);
+//   }
+// }
 
 const drawLayer = new VectorLayer({
   source: new VectorSource(),
@@ -788,10 +788,9 @@ const drawLayer = new VectorLayer({
         width: 10,
       }),
       text: new Text({
-        text: "Markering\n(" + feature.get("name") + ")",
-        font: "14px Roboto,monospace",
-        textAlign: "left",
-        offsetX: 10,
+        text: "Markering\n" + feature.get("name"),
+        font: "12px Roboto,monospace",
+        // offsetX: 10,
         fill: new Fill({
           color: "black",
         }),
@@ -802,7 +801,7 @@ const drawLayer = new VectorLayer({
           color: [0, 0, 0, 0.9],
           width: 1.5,
         }),
-        padding: [2, 1, 0, 2],
+        padding: [2, 0, 0, 2],
       }),
     })
   }
