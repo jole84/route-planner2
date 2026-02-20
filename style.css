@@ -93,6 +93,11 @@ body {
   gap: 5px;
 }
 
+.public {
+  color: green;
+  font-weight: bold;
+}
+
 .user-select-all {
   max-width: 400px;
   line-break: anywhere;

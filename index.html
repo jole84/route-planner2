@@ -40,6 +40,7 @@
           <div id="exportGPXButton" class="dropdownItem">Exportera .gpx fil</div>
           <div id="saveGeoJsonButton" class="dropdownItem">Spara projekt som .geojson</div>
           <div id="exportRouteButton" class="dropdownItem ">Visa Exportlänkar</div>
+          <div id="storeRouteButton" class="dropdownItem">Ladda upp/ner/dela filer</div>
         </div>
       </div>
       <div class="dropdown">
@@ -121,6 +122,37 @@
 
   <!-- menu contents -->
   <div class="invisible">
+
+    <div id="routeStorageMenu">
+      <div id="loginView">
+        <h2>Login (auto-register)</h2>
+        <input id="username" placeholder="Username"><br><br>
+        <input id="password" type="password" placeholder="Password"><br>
+        <button id="loginButton">Login</button>
+      </div>
+
+      <div id="appView" class="invisible">
+        <p>
+          Logged in as <strong id="userLabel"></strong><br>
+          <button id="logoutButton">Logout</button>
+          <button id="deleteUserButton" class="danger">Delete User</button>
+        </p>
+
+        <h2>Change Password</h2>
+        <input id="oldPassword" type="password" placeholder="Old password"><br>
+        <input id="newPassword" type="password" placeholder="New password"><br>
+        <input id="verifyNewPassword" type="password" placeholder="Verify new password">
+        <button id="changePasswordButton">Change Password</button>
+
+        <!-- <h4>Ladda upp aktuell rutt</h4> -->
+        <!-- <input id="uploadName" placeholder="Ruttnamn"><br><br> -->
+        <button id="uploadRouteButton">Ladda upp aktuell rutt</button>
+
+      </div>
+
+      <div id="uploads"></div>
+    </div>
+
     <!-- menuItems -->
     <div id="menuItems">
       <div><img src="https://jole84.se/images/84.svg" height="30"></div>
@@ -172,11 +204,13 @@
       <div title="Kopiera koordinater" class="routeControl" id="contextPopupContent"></div>
       <div class="routeControl" id="gmaplink">Visa på Google Maps</div>
       <div class="routeControl" id="streetviewlink">Visa Streetview</div>
-      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/images/poi-marker.svg"> Lägg till
+      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/images/poi-marker.svg">
+        Lägg till
         POI</div>
       <div class="routeControl invisible" id="editPoiButton">Byt namn på POI</div>
       <div class="routeControl invisible" id="removePoiButton">✖ Ta bort POI</div>
-      <div class="routeControl" id="addRoutePosition"><img height="15rem" src="https://jole84.se/images/start-marker.svg"> Lägg
+      <div class="routeControl" id="addRoutePosition"><img height="15rem"
+          src="https://jole84.se/images/start-marker.svg"> Lägg
         till ruttpunkt</div>
       <div class="routeControl invisible" id="removeRoutePosition"><img height="15rem"
           src="https://jole84.se/images/end-marker.svg"> Ta bort ruttpunkt</div>

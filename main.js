@@ -27,6 +27,7 @@ const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const helpDiv = document.getElementById("helpDiv");
 const exportLinks = document.getElementById("exportLinks");
+const routeStorageMenu = document.getElementById("routeStorageMenu");
 // const gpxFileName = document.getElementById("gpxFileName");
 const savePoiNameInput = document.getElementById("savePoiNameInput");
 const loadFileDialog = document.getElementById("loadFileDialog");
@@ -306,8 +307,9 @@ document.getElementById("saveGeoJsonButton").onclick = () => {
 document.getElementById("gpxOpacity").addEventListener("change", function () {
   gpxLayer.setOpacity(parseFloat(document.getElementById("gpxOpacity").value));
 });
+document.getElementById("clearMapButton").onclick = clearMap;
 
-document.getElementById("clearMapButton").addEventListener("click", function () {
+function clearMap() {
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
   routePointsLineString.setCoordinates([]);
@@ -324,7 +326,7 @@ document.getElementById("clearMapButton").addEventListener("click", function () 
   localStorage.removeItem("drawFeatures");
   lineStringId = 0;
   // document.location.reload();
-});
+};
 
 document.getElementById("reverseRoute").addEventListener("click", function () {
   routePointsLineString.setCoordinates(routePointsLineString.getCoordinates().reverse());
@@ -638,16 +640,15 @@ const poiLayer = new VectorLayer({
 const modifyPoiLayer = new Modify({ source: poiLayer.getSource() });
 
 poiLayer.getSource().addEventListener("change", function () {
-  const poiString = [];
-  poiLayer.getSource().forEachFeature(function (feature) {
-    poiString.push([feature.getGeometry().getCoordinates(), feature.get("name")]);
-  });
-  localStorage.poiString = JSON.stringify(poiString);
+  const poiFeatures = poiLayer.getSource().getFeatures();
+  const geoJsonFile = new GeoJSON().writeFeatures(poiFeatures);
+  localStorage.poiString = geoJsonFile;
 });
-
-JSON.parse(localStorage.poiString || "[]").forEach(function (element) {
-  addPoi(element[0], element[1]);
-});
+try {
+  poiLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.poiString));
+} catch (error) {
+  console.log(error);
+}
 
 JSON.parse(localStorage.routePoints || "[]").forEach(function (element) {
   routePointsLineString.appendCoordinate(element);
@@ -1206,15 +1207,15 @@ map.on("pointerdrag", function (evt) {
 });
 
 document.addEventListener("keydown", function (event) {
-  if (event.key == "s") {
-    console.log("gpxLayer", gpxLayer.getSource().getFeatures().length);
-    console.log("routeLineLayer", routeLineLayer.getSource().getFeatures().length);
-    console.log("routePointsLineStringLayer", routePointsLineStringLayer.getSource().getFeatures().length);
-    console.log("routePointsLayer", routePointsLayer.getSource().getFeatures().length);
-    console.log("voiceHintsLayer", voiceHintsLayer.getSource().getFeatures().length);
-    console.log("poiLayer", poiLayer.getSource().getFeatures().length);
-    console.log("drawLayer", drawLayer.getSource().getFeatures().length);
-  }
+  // if (event.key == "s") {
+  //   console.log("gpxLayer", gpxLayer.getSource().getFeatures().length);
+  //   console.log("routeLineLayer", routeLineLayer.getSource().getFeatures().length);
+  //   console.log("routePointsLineStringLayer", routePointsLineStringLayer.getSource().getFeatures().length);
+  //   console.log("routePointsLayer", routePointsLayer.getSource().getFeatures().length);
+  //   console.log("voiceHintsLayer", voiceHintsLayer.getSource().getFeatures().length);
+  //   console.log("poiLayer", poiLayer.getSource().getFeatures().length);
+  //   console.log("drawLayer", drawLayer.getSource().getFeatures().length);
+  // }
 
   if (!menuDivcontent.checkVisibility()) {
     if (event.key == "Backspace") {
@@ -1334,4 +1335,254 @@ removePositionButton.addEventListener("click", function (event) {
   } catch {
     console.log("no points found!")
   }
-})
+});
+
+// upload route to API
+document.getElementById("storeRouteButton").onclick = function () {
+  if (localStorage.getItem("token")) {
+    showApp(localStorage.getItem("username"));
+  }
+  menuDivcontent.replaceChildren(routeStorageMenu);
+  loadData();
+}
+
+document.getElementById("loginButton").onclick = login;
+document.getElementById("logoutButton").onclick = logout;
+document.getElementById("uploadRouteButton").onclick = uploadRoute;
+document.getElementById("deleteUserButton").onclick = deleteUser;
+document.getElementById("changePasswordButton").onclick = changePassword;
+
+async function api(action, data = {}) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch("https://jole84.se/routeStorage/api.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, token, ...data })
+  });
+
+  return res.json();
+}
+
+async function loadData() {
+  const r = await api("list");
+  const username = localStorage.getItem("username");
+
+  console.log(r.uploads);
+
+  document.getElementById("uploads").replaceChildren();
+  r.uploads.forEach(u => {
+    const is_public = u.is_public == 1;
+
+    const elementText = document.createElement("strong");
+    elementText.innerHTML = u.item_name + " " + (u.is_public ? '<span class="public">(Publik)</span>' : "(Privat)");
+    document.getElementById("uploads").appendChild(elementText);
+
+    const creatorText = document.createElement("small");
+    creatorText.innerHTML = `By ${u.username} — ${new Date(u.created_at).toLocaleString()}<br>`;
+    document.getElementById("uploads").appendChild(creatorText);
+
+    // ladda knapp
+    const loadButton = document.createElement("button");
+    loadButton.addEventListener("click", () => { loadItem(u.id) });
+    loadButton.innerHTML = "ladda";
+    elementText.appendChild(loadButton);
+
+    if (!!localStorage.token && u.username == localStorage.username) {
+      // ta bort knapp
+      const removeButton = document.createElement("button");
+      removeButton.addEventListener("click", () => { deleteUpload(u.id) });
+      removeButton.innerHTML = "Ta bort";
+      elementText.appendChild(removeButton);
+
+      // växla privat knapp
+      const makePublicButton = document.createElement("button");
+      makePublicButton.addEventListener("click", () => {
+        is_public ? makePrivate(u.id) : makePublic(u.id);
+      });
+      makePublicButton.innerHTML = is_public ? "Gör privat" : "Gör publik";
+      elementText.appendChild(makePublicButton);
+
+      // ersätt upload knapp
+      const updateButton = document.createElement("button");
+      updateButton.addEventListener("click", () => { editItem(u.id, u.item_name) });
+      updateButton.innerHTML = "Ersätt";
+      elementText.appendChild(updateButton);
+    }
+  });
+}
+
+async function uploadRoute() {
+  // const name = document.getElementById("uploadName").value;
+  const name = prompt("Ange ruttnamn");
+  const collection = new Collection();
+  const fileFormat = new GeoJSON();
+
+  collection.extend(poiLayer.getSource().getFeatures());
+  collection.extend(getNonEmptyFeatures(routePointsLineStringLayer));
+  collection.extend(getNonEmptyFeatures(routeLineLayer));
+  collection.extend(getNonEmptyFeatures(drawLayer));
+
+  const geoJsonFile = fileFormat.writeFeatures(collection.getArray(), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+    decimals: 5,
+  });
+
+  console.log(geoJsonFile);
+  const text = btoa(encodeURIComponent(geoJsonFile));
+  if (name) {
+    await api("upload", { name, text });
+    loadData();
+  }
+}
+
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const r = await api("login", { username, password });
+
+  console.log(r);
+  if (r.success) {
+    localStorage.setItem("token", r.token);
+    localStorage.setItem("username", r.username);
+    showApp(username);
+    loadData();
+  } else {
+    alert(r.error);
+  }
+}
+
+function showApp(username) {
+  try {
+    if (localStorage.token) {
+      document.getElementById("loginView").classList.add("invisible");
+      document.getElementById("appView").classList.remove("invisible");
+      document.getElementById("userLabel").textContent = username;
+    } else {
+      document.getElementById("loginView").classList.remove("invisible");
+      document.getElementById("appView").classList.add("invisible");
+    }
+  } catch (error) {
+    console.log(error);
+  }
+  // loadData();
+}
+
+function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("username");
+  showApp("");
+  loadData();
+  // location.reload();
+}
+
+async function deleteUser() {
+  if (!confirm("Delete your account and ALL uploads?")) return;
+  await api("delete_user");
+  logout();
+}
+
+async function changePassword() {
+  const old_password = document.getElementById("oldPassword").value;
+  const new_password = document.getElementById("newPassword").value;
+  const verifyNewPassword = document.getElementById("verifyNewPassword").value;
+
+  if (!old_password || !new_password || (new_password != verifyNewPassword) ) return;
+
+  const r = await api("change_password", {
+    old_password,
+    new_password
+  });
+
+  if (r.error) {
+    alert(r.error);
+    return;
+  }
+
+  alert("Password changed successfully");
+  document.getElementById("oldPassword").value = "";
+  document.getElementById("newPassword").value = "";
+}
+
+async function upload() {
+  // const name = document.getElementById("uploadName").value;
+  const name = prompt("Ange ruttnamn");
+  const text = document.getElementById("uploadText").value;
+
+  await api("upload", { name, text });
+  loadData();
+}
+
+async function makePublic(id) {
+  await api("make_public", { id });
+  loadData();
+}
+
+async function makePrivate(id) {
+  await api("make_private", { id });
+  loadData();
+}
+
+async function deleteUpload(id) {
+  if (!confirm("Delete this upload?")) return;
+  await api("delete_upload", { id });
+  loadData();
+}
+
+async function loadItem(id) {
+  const r = await api("get_item", { id });
+
+  if (r.error) {
+    alert(r.error);
+    return;
+  }
+
+  // document.getElementById("uploadName").value = r.item.item_name;
+
+  const format = new GeoJSON();
+  const newGeometry = format.readFeatures(decodeURIComponent(atob(r.item.item_text)), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+  });
+
+  clearMap();
+  newGeometry.forEach(element => {
+    if (!!element.get("routeLineString")) {
+      routeLineString.setCoordinates(element.getGeometry().getCoordinates());
+    } else if (!!element.get("poi")) {
+      poiLayer.getSource().addFeature(element);
+    } else if (!!element.get("drawing")) {
+      drawLayer.getSource().addFeature(element);
+    } else if (!!element.get("routePointsLineString")) {
+      routePointsLineString.setCoordinates(element.getGeometry().getCoordinates());
+      routeMe();
+    }
+  });
+}
+
+function editItem(id, currentName) {
+  // if (!confirm("ersätt upload?")) return;
+  // const name = document.getElementById("uploadName").value || currentName;
+  const name = prompt("Ange ruttnamn", currentName);
+  if (!name) return;
+
+  const collection = new Collection();
+  const fileFormat = new GeoJSON();
+  collection.extend(poiLayer.getSource().getFeatures());
+  collection.extend(getNonEmptyFeatures(routePointsLineStringLayer));
+  collection.extend(getNonEmptyFeatures(routeLineLayer));
+  collection.extend(getNonEmptyFeatures(drawLayer));
+
+  const geoJsonFile = fileFormat.writeFeatures(collection.getArray(), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+    decimals: 5,
+  });
+
+  const text = btoa(encodeURIComponent(geoJsonFile));
+
+  api("update_item", { id, name: name, text: text })
+    .then(() => loadData());
+}
