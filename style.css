@@ -103,10 +103,10 @@ body {
 
 .user-select-all {
   max-width: 400px;
-  line-break: anywhere;
+  /* line-break: anywhere; */
   padding: 15px 0px 15px 0px;
   overflow: hidden;
-  display: -webkit-box;
+  /* display: -webkit-box; */
   -webkit-line-clamp: 1;
   line-clamp: 1;
   -webkit-box-orient: vertical;

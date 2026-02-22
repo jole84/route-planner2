@@ -193,48 +193,42 @@ function toCoordinateString(coordinate) {
 
 document.getElementById("exportRouteButton").onclick = function () {
   menuDivcontent.replaceChildren(exportLinks);
-
+  let linkCode = "https://jole84.se/nav-app/index.html";
+  const url = new URL(linkCode);
   const routePoints = [];
   const poiPoints = [];
-  let linkCode = "https://jole84.se/nav-app/index.html?";
-  let trackPointLink = "https://jole84.se/nav-app/index.html?";
 
+  // Route waypoints
   routePointsLayer.getSource().forEachFeature(function (feature) {
     routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
   });
   if (routePoints.length > 0) {
-    linkCode += "destinationPoints64=" + btoa(JSON.stringify(routePoints));
-  }
-  if (routePoints.length > 1) {
-    trackPointLink += "trackPoints=" + encodeURIComponent(JSON.stringify(routeLineString.getLineString(0).simplify(25).getCoordinates().map(each => [Math.round(each[0]), Math.round(each[1])])));
+    url.searchParams.append("destinationPoints64", btoa(JSON.stringify(routePoints)));
   }
 
+  // POI
   poiLayer.getSource().forEachFeature(function (feature) {
     poiPoints.push([toCoordinateString(feature.getGeometry().getCoordinates()), encodeURI(feature.get("name"))]);
   });
   if (poiPoints.length > 0) {
-    linkCode += "&poiPoints64=" + btoa(JSON.stringify(poiPoints));
-    trackPointLink += "&poiPoints64=" + btoa(JSON.stringify(poiPoints));
+    url.searchParams.append("poiPoints64", btoa(JSON.stringify(poiPoints)));
   }
 
-  document.getElementById("linkCodeDiv").innerHTML = linkCode;
-  document.getElementById("linkCodeDiv").title = "Klicka för att kopiera";
-  document.getElementById("trackPointLinkDiv").innerHTML = trackPointLink;
-  document.getElementById("navAppButton").setAttribute("href", linkCode);
-  document.getElementById("navAppButton").title = linkCode;
-  document.getElementById("navAppButton2").setAttribute("href", trackPointLink);
-  document.getElementById("navAppButton2").title = trackPointLink;
+  if (document.getElementById("currentLoadedName").innerHTML == "") {
+    qrCodeLink.clear();
+    document.getElementById("linkCodeDiv").innerHTML = url;
+    document.getElementById("navAppButton").setAttribute("href", url);
+    document.getElementById("navAppButton").title = url;
+    try {
+      qrCodeLink.makeCode(url);
+    } catch {
+      console.log("qr error");
+    }
+  }
 
   document.getElementById("linkCodeDiv").addEventListener("click", function () {
     navigator.clipboard.writeText(linkCode);
-  })
-
-  qrCodeLink.clear();
-  try {
-    qrCodeLink.makeCode(linkCode);
-  } catch {
-    console.log("qr error")
-  }
+  });
 }
 
 async function saveFile(data, fileName) {
@@ -1385,17 +1379,17 @@ async function loadData() {
     const cell6 = newRow.insertCell(5);
     const cell7 = newRow.insertCell(6);
 
-    const elementText = document.createElement("a");
+    const elementText = document.createElement("code");
     elementText.innerHTML = u.item_name;
+    elementText.classList.add("user-select-all");
     elementText.classList.add("bold");
-    // elementText.classList.add("user-select-all");
-    // elementText.title = "Klicka för att kopiera";
+    elementText.title = "Klicka för att kopiera";
     elementText.href = "https://jole84.se/nav-app/index.html?getId=" + u.id;
     cell1.appendChild(elementText);
 
-    // elementText.addEventListener("click", function () {
-    //   navigator.clipboard.writeText(elementText.href);
-    // });
+    elementText.addEventListener("click", function () {
+      navigator.clipboard.writeText(elementText.href);
+    });
 
     cell2.innerHTML = u.is_public ? '<span class="public">(Publik)</span>' : "(Privat)";
     // cell2.classList.add("bold");
@@ -1557,6 +1551,17 @@ async function loadItem(u) {
   });
 
   clearMap();
+  const newUrl = new URL("https://jole84.se/nav-app/index.html");
+  newUrl.searchParams.append("getId", u.id);
+  qrCodeLink.makeCode(newUrl);
+  try {
+    document.getElementById("linkCodeDiv").innerHTML = newUrl;
+    document.getElementById("navAppButton").href = newUrl;
+    document.getElementById("navAppButton").title = newUrl;
+  } catch (error) {
+    console.log(error);
+  }
+
   document.getElementById("currentLoadedName").innerHTML = u.item_name;
   newGeometry.forEach(element => {
     if (!!element.get("routeLineString")) {
