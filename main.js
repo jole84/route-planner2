@@ -1384,12 +1384,19 @@ async function loadData() {
     const cell5 = newRow.insertCell(4);
     const cell6 = newRow.insertCell(5);
     const cell7 = newRow.insertCell(6);
-    
-    const elementText = document.createElement("strong");
+
+    const elementText = document.createElement("a");
     elementText.innerHTML = u.item_name;
+    elementText.classList.add("bold");
+    // elementText.classList.add("user-select-all");
+    // elementText.title = "Klicka för att kopiera";
+    elementText.href = "https://jole84.se/nav-app/index.html?getId=" + u.id;
     cell1.appendChild(elementText);
 
-    
+    // elementText.addEventListener("click", function () {
+    //   navigator.clipboard.writeText(elementText.href);
+    // });
+
     cell2.innerHTML = u.is_public ? '<span class="public">(Publik)</span>' : "(Privat)";
     // cell2.classList.add("bold");
     // ladda knapp
@@ -1397,14 +1404,14 @@ async function loadData() {
     loadButton.addEventListener("click", () => { loadItem(u) });
     loadButton.innerHTML = "Ladda";
     cell3.appendChild(loadButton);
-    
+
     if (!!localStorage.token && u.username == localStorage.username) {
       // ta bort knapp
       const removeButton = document.createElement("button");
       removeButton.addEventListener("click", () => { deleteUpload(u) });
       removeButton.innerHTML = "Ta bort";
       cell4.appendChild(removeButton);
-      
+
       // växla privat knapp
       const makePublicButton = document.createElement("button");
       makePublicButton.addEventListener("click", () => {
@@ -1412,14 +1419,14 @@ async function loadData() {
       });
       makePublicButton.innerHTML = is_public ? "Gör privat" : "Gör publik";
       cell5.appendChild(makePublicButton);
-      
+
       // ersätt upload knapp
       const updateButton = document.createElement("button");
       updateButton.addEventListener("click", () => { editItem(u) });
       updateButton.innerHTML = "Ersätt";
       cell6.appendChild(updateButton);
     }
-    
+
     const creatorText = document.createElement("small");
     creatorText.innerHTML = `By <span class="bold">${u.username}</span> — ${new Date(u.created_at).toLocaleString()}<br>`;
     cell7.appendChild(creatorText);
@@ -1502,7 +1509,7 @@ async function changePassword() {
   const new_password = document.getElementById("newPassword").value;
   const verifyNewPassword = document.getElementById("verifyNewPassword").value;
 
-  if (!old_password || !new_password || (new_password != verifyNewPassword) ) return;
+  if (!old_password || !new_password || (new_password != verifyNewPassword)) return;
 
   const r = await api("change_password", {
     old_password,
@@ -1548,7 +1555,7 @@ async function loadItem(u) {
     dataProjection: "EPSG:4326",
     featureProjection: "EPSG:3857",
   });
-  
+
   clearMap();
   document.getElementById("currentLoadedName").innerHTML = u.item_name;
   newGeometry.forEach(element => {

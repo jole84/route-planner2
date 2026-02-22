@@ -72,10 +72,6 @@ body {
   overflow: overlay;
 }
 
-#currentLoadedName {
-  font-weight: bold;
-}
-
 #infoGroup:has(#trackLength:empty):has(#currentLoadedName:empty) {
   display: none;
 }
@@ -238,10 +234,6 @@ kbd {
   border-radius: 5px;
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
   color: rgb(32, 32, 32);
-}
-
-#contextPopupContent {
-  font-weight: bold;
 }
 
 #contextPopupContent:empty {
