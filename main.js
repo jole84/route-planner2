@@ -310,6 +310,7 @@ document.getElementById("gpxOpacity").addEventListener("change", function () {
 document.getElementById("clearMapButton").onclick = clearMap;
 
 function clearMap() {
+  document.getElementById("currentLoadedName").innerHTML = "";
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
   routePointsLineString.setCoordinates([]);
@@ -1547,8 +1548,9 @@ async function loadItem(u) {
     dataProjection: "EPSG:4326",
     featureProjection: "EPSG:3857",
   });
-
+  
   clearMap();
+  document.getElementById("currentLoadedName").innerHTML = u.item_name;
   newGeometry.forEach(element => {
     if (!!element.get("routeLineString")) {
       routeLineString.setCoordinates(element.getGeometry().getCoordinates());
@@ -1565,8 +1567,10 @@ async function loadItem(u) {
 
 function editItem(u) {
   // if (!confirm("ersätt upload?")) return;
-  // const name = document.getElementById("uploadName").value || currentName;
-  const name = prompt("Ange ruttnamn", u.item_name);
+  const oldName = document.getElementById("currentLoadedName").innerHTML;
+  const newMessage = (u.item_name != oldName) ? "Varning ersätter:\n" + u.item_name + " med " + (oldName || "ny rutt\n") : "" + "Ange ruttnamn"
+
+  const name = prompt(newMessage, u.item_name);
   if (!name) return;
 
   const collection = new Collection();

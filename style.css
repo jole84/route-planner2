@@ -72,7 +72,11 @@ body {
   overflow: overlay;
 }
 
-#infoGroup:has(#trackLength:empty) {
+#currentLoadedName {
+  font-weight: bold;
+}
+
+#infoGroup:has(#trackLength:empty):has(#currentLoadedName:empty) {
   display: none;
 }
 
