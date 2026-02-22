@@ -124,33 +124,43 @@
   <div class="invisible">
 
     <div id="routeStorageMenu">
-      <div id="loginView">
-        <h2>Login (auto-register)</h2>
-        <input id="username" placeholder="Username"><br><br>
-        <input id="password" type="password" placeholder="Password"><br>
-        <button id="loginButton">Login</button>
-      </div>
+      <table id="loginView">
+        <tr>
+          <td>
+            <h2>Login (auto-register)</h2>
+          </td>
+          <td>
+            <input id="username" placeholder="Username"><br><br>
+            <input id="password" type="password" placeholder="Password"><br>
+            <button id="loginButton">Login</button>
+          </td>
+        </tr>
+      </table>
 
-      <div id="appView" class="invisible">
-        <p>
-          Logged in as <strong id="userLabel"></strong><br>
-          <button id="logoutButton">Logout</button>
-          <button id="deleteUserButton" class="danger">Delete User</button>
-        </p>
+      <table id="appView" class="invisible">
+        <tr>
+          <td>
+            Logged in as <strong id="userLabel"></strong><br>
+            <button id="logoutButton">Logout</button>
+            <button id="deleteUserButton" class="danger">Delete User</button>
+          </td>
+          <td>
+            <input id="oldPassword" type="password" placeholder="Old password"><br>
+            <input id="newPassword" type="password" placeholder="New password"><br>
+            <input id="verifyNewPassword" type="password" placeholder="Verify new password">
+            <button id="changePasswordButton">Change Password</button>
+          </td>
+        </tr>
+        <tr>
 
-        <h2>Change Password</h2>
-        <input id="oldPassword" type="password" placeholder="Old password"><br>
-        <input id="newPassword" type="password" placeholder="New password"><br>
-        <input id="verifyNewPassword" type="password" placeholder="Verify new password">
-        <button id="changePasswordButton">Change Password</button>
+          <td>
+            <button id="uploadRouteButton" class="btn btn-primary">Ladda upp aktiv rutt</button>
+          </td>
 
-        <!-- <h4>Ladda upp aktuell rutt</h4> -->
-        <!-- <input id="uploadName" placeholder="Ruttnamn"><br><br> -->
-        <button id="uploadRouteButton">Ladda upp aktuell rutt</button>
+        </tr>
+      </table>
 
-      </div>
-
-      <div id="uploads"></div>
+      <table id="uploads"></table>
     </div>
 
     <!-- menuItems -->

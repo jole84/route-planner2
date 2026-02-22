@@ -1351,6 +1351,7 @@ document.getElementById("logoutButton").onclick = logout;
 document.getElementById("uploadRouteButton").onclick = uploadRoute;
 document.getElementById("deleteUserButton").onclick = deleteUser;
 document.getElementById("changePasswordButton").onclick = changePassword;
+const uploadsTable = document.getElementById("uploads");
 
 async function api(action, data = {}) {
   const token = localStorage.getItem("token");
@@ -1366,7 +1367,7 @@ async function api(action, data = {}) {
 
 async function loadData() {
   const r = await api("list");
-  const username = localStorage.getItem("username");
+  // const username = localStorage.getItem("username");
 
   console.log(r.uploads);
 
@@ -1374,41 +1375,53 @@ async function loadData() {
   r.uploads.forEach(u => {
     const is_public = u.is_public == 1;
 
+    const newRow = uploadsTable.insertRow();
+    const cell1 = newRow.insertCell(0);
+    const cell2 = newRow.insertCell(1);
+    const cell3 = newRow.insertCell(2);
+    const cell4 = newRow.insertCell(3);
+    const cell5 = newRow.insertCell(4);
+    const cell6 = newRow.insertCell(5);
+    const cell7 = newRow.insertCell(6);
+    
     const elementText = document.createElement("strong");
-    elementText.innerHTML = u.item_name + " " + (u.is_public ? '<span class="public">(Publik)</span>' : "(Privat)");
-    document.getElementById("uploads").appendChild(elementText);
+    elementText.innerHTML = u.item_name;
+    cell1.appendChild(elementText);
 
-    const creatorText = document.createElement("small");
-    creatorText.innerHTML = `By ${u.username} — ${new Date(u.created_at).toLocaleString()}<br>`;
-    document.getElementById("uploads").appendChild(creatorText);
-
+    
+    cell2.innerHTML = u.is_public ? '<span class="public">(Publik)</span>' : "(Privat)";
+    // cell2.classList.add("bold");
     // ladda knapp
     const loadButton = document.createElement("button");
-    loadButton.addEventListener("click", () => { loadItem(u.id) });
-    loadButton.innerHTML = "ladda";
-    elementText.appendChild(loadButton);
-
+    loadButton.addEventListener("click", () => { loadItem(u) });
+    loadButton.innerHTML = "Ladda";
+    cell3.appendChild(loadButton);
+    
     if (!!localStorage.token && u.username == localStorage.username) {
       // ta bort knapp
       const removeButton = document.createElement("button");
-      removeButton.addEventListener("click", () => { deleteUpload(u.id) });
+      removeButton.addEventListener("click", () => { deleteUpload(u) });
       removeButton.innerHTML = "Ta bort";
-      elementText.appendChild(removeButton);
-
+      cell4.appendChild(removeButton);
+      
       // växla privat knapp
       const makePublicButton = document.createElement("button");
       makePublicButton.addEventListener("click", () => {
         is_public ? makePrivate(u.id) : makePublic(u.id);
       });
       makePublicButton.innerHTML = is_public ? "Gör privat" : "Gör publik";
-      elementText.appendChild(makePublicButton);
-
+      cell5.appendChild(makePublicButton);
+      
       // ersätt upload knapp
       const updateButton = document.createElement("button");
-      updateButton.addEventListener("click", () => { editItem(u.id, u.item_name) });
+      updateButton.addEventListener("click", () => { editItem(u) });
       updateButton.innerHTML = "Ersätt";
-      elementText.appendChild(updateButton);
+      cell6.appendChild(updateButton);
     }
+    
+    const creatorText = document.createElement("small");
+    creatorText.innerHTML = `By <span class="bold">${u.username}</span> — ${new Date(u.created_at).toLocaleString()}<br>`;
+    cell7.appendChild(creatorText);
   });
 }
 
@@ -1438,12 +1451,11 @@ async function uploadRoute() {
 }
 
 async function login() {
-  const username = document.getElementById("username").value;
+  const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
 
   const r = await api("login", { username, password });
 
-  console.log(r);
   if (r.success) {
     localStorage.setItem("token", r.token);
     localStorage.setItem("username", r.username);
@@ -1506,15 +1518,6 @@ async function changePassword() {
   document.getElementById("newPassword").value = "";
 }
 
-async function upload() {
-  // const name = document.getElementById("uploadName").value;
-  const name = prompt("Ange ruttnamn");
-  const text = document.getElementById("uploadText").value;
-
-  await api("upload", { name, text });
-  loadData();
-}
-
 async function makePublic(id) {
   await api("make_public", { id });
   loadData();
@@ -1525,21 +1528,19 @@ async function makePrivate(id) {
   loadData();
 }
 
-async function deleteUpload(id) {
-  if (!confirm("Delete this upload?")) return;
-  await api("delete_upload", { id });
+async function deleteUpload(u) {
+  if (!confirm("Ta bort " + u.item_name + "?")) return;
+  await api("delete_upload", { "id": u.id });
   loadData();
 }
 
-async function loadItem(id) {
-  const r = await api("get_item", { id });
+async function loadItem(u) {
+  const r = await api("get_item", { id: u.id });
 
   if (r.error) {
     alert(r.error);
     return;
   }
-
-  // document.getElementById("uploadName").value = r.item.item_name;
 
   const format = new GeoJSON();
   const newGeometry = format.readFeatures(decodeURIComponent(atob(r.item.item_text)), {
@@ -1562,10 +1563,10 @@ async function loadItem(id) {
   });
 }
 
-function editItem(id, currentName) {
+function editItem(u) {
   // if (!confirm("ersätt upload?")) return;
   // const name = document.getElementById("uploadName").value || currentName;
-  const name = prompt("Ange ruttnamn", currentName);
+  const name = prompt("Ange ruttnamn", u.item_name);
   if (!name) return;
 
   const collection = new Collection();
@@ -1583,6 +1584,6 @@ function editItem(id, currentName) {
 
   const text = btoa(encodeURIComponent(geoJsonFile));
 
-  api("update_item", { id, name: name, text: text })
+  api("update_item", { id: u.id, name: name, text: text })
     .then(() => loadData());
 }
