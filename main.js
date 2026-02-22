@@ -49,7 +49,7 @@ document.getElementById("routeModeSelector").addEventListener("change", function
   routeMe();
 });
 
-localStorage.centerCoordinate = localStorage.centerCoordinate || "[1700000, 8500000]";
+localStorage.centerCoordinate = localStorage.centerCoordinate || "[1650000, 8000000]";
 localStorage.centerZoom = localStorage.centerZoom || 7;
 localStorage.mapMode = localStorage.mapMode || 0; // default map
 
