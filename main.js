@@ -333,6 +333,7 @@ const newTileLayer = new VectorTileLayer({
   source: new VectorTileSource({
     format: new MVT(),
     // url: './tiles/{z}/{x}/{y}.pbf',
+    // url: "https://jole84.se/phpReadFile.php?url=" +  'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
     url: 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
     minZoom: 6,
     maxZoom: 14,
@@ -365,6 +366,15 @@ const topoweb = new TileLayer({
 const osm = new TileLayer({
   className: "saturated",
   source: new OSM(),
+  visible: false,
+});
+
+const opentopomap = new TileLayer({
+  className: "saturated",
+  source: new OSM({
+    url: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+    maxZoom: 17,
+  }),
   visible: false,
 });
 
@@ -851,6 +861,7 @@ const map = new Map({
     ortofoto,
     topoweb,
     osm,
+    opentopomap,
     gpxLayer,
     routeLineLayer,
     routePointsLineStringLayer,
@@ -882,6 +893,7 @@ function switchMap() {
   ortofoto.setVisible(false);
   topoweb.setVisible(false);
   osm.setVisible(false);
+  opentopomap.setVisible(false);
 
   if (localStorage.mapMode == 0) {
     newTileLayer.setVisible(true);
@@ -901,6 +913,8 @@ function switchMap() {
     ortofoto.setMaxZoom(20);
   } else if (localStorage.mapMode == 4) {
     osm.setVisible(true);
+  } else if (localStorage.mapMode == 5) {
+    opentopomap.setVisible(true);
   }
 }
 document.getElementById("layerSelector").addEventListener("change", function () {
@@ -1391,7 +1405,7 @@ async function loadData() {
       navigator.clipboard.writeText(elementText.href);
     });
 
-    cell2.innerHTML = u.is_public ? '<span class="public">(Publik)</span>' : "(Privat)";
+    cell2.innerHTML = u.is_public ? '<span class="public bold">(Publik)</span>' : "(Privat)";
     // cell2.classList.add("bold");
     // ladda knapp
     const loadButton = document.createElement("button");
