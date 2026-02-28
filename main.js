@@ -126,6 +126,7 @@ document.getElementById("loadProjectButton").addEventListener("click", evt => {
 
 document.getElementById("selectFileButton").addEventListener("click", evt => {
   loadAsProject = false;
+  gpxLayer.getSource().clear();
   getTheFile();
 });
 
@@ -1141,6 +1142,7 @@ function openContextPopup(coordinate) {
         });
       }
       if (gpxFeatureToRemove.getGeometry().getType() === "Point") {
+        gpxFeatureToRemove.set("poi", true);
         poiLayer.getSource().addFeature(gpxFeatureToRemove);
       }
       gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
