@@ -1397,7 +1397,7 @@ async function loadData() {
     elementText.innerHTML = u.item_name;
     elementText.classList.add("user-select-all");
     elementText.classList.add("bold");
-    elementText.title = "Klicka för att kopiera";
+    elementText.title = "Klicka för att kopiera länk";
     elementText.href = "https://jole84.se/nav-app/index.html?getId=" + u.id;
     cell1.appendChild(elementText);
 
@@ -1442,8 +1442,8 @@ async function loadData() {
 }
 
 async function uploadRoute() {
-  // const name = document.getElementById("uploadName").value;
   const name = prompt("Ange ruttnamn");
+  document.getElementById("currentLoadedName").innerHTML = name;
   const collection = new Collection();
   const fileFormat = new GeoJSON();
 
@@ -1451,6 +1451,7 @@ async function uploadRoute() {
   collection.extend(getNonEmptyFeatures(routePointsLineStringLayer));
   collection.extend(getNonEmptyFeatures(routeLineLayer));
   collection.extend(getNonEmptyFeatures(drawLayer));
+  collection.extend(getNonEmptyFeatures(gpxLayer));
 
   const geoJsonFile = fileFormat.writeFeatures(collection.getArray(), {
     dataProjection: "EPSG:4326",
@@ -1587,6 +1588,8 @@ async function loadItem(u) {
     } else if (!!element.get("routePointsLineString")) {
       routePointsLineString.setCoordinates(element.getGeometry().getCoordinates());
       routeMe();
+    } else if (!!element.get("gpxFeature")) {
+      gpxLayer.getSource().addFeature(element);
     }
   });
 }
@@ -1599,12 +1602,14 @@ function editItem(u) {
   const name = prompt(newMessage, u.item_name);
   if (!name) return;
 
+  document.getElementById("currentLoadedName").innerHTML = name;
   const collection = new Collection();
   const fileFormat = new GeoJSON();
   collection.extend(poiLayer.getSource().getFeatures());
   collection.extend(getNonEmptyFeatures(routePointsLineStringLayer));
   collection.extend(getNonEmptyFeatures(routeLineLayer));
   collection.extend(getNonEmptyFeatures(drawLayer));
+  collection.extend(getNonEmptyFeatures(gpxLayer));
 
   const geoJsonFile = fileFormat.writeFeatures(collection.getArray(), {
     dataProjection: "EPSG:4326",

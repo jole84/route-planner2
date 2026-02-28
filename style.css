@@ -136,6 +136,11 @@ body {
   display: none;
 }
 
+.sticky {
+  position: sticky;
+  bottom: 0;
+}
+
 .form-select {
   background-color: #fff;
   border-radius: 5px;
