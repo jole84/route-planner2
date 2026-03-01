@@ -128,6 +128,10 @@ body {
   margin-bottom: 5px;
 }
 
+.alignCellRight {
+  text-align: right;
+}
+
 .form-check-input[type=checkbox] {
   margin: 0px;
 }

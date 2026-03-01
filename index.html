@@ -53,11 +53,13 @@
           <div class="dropdownItem">
             routeModeSelector:
             <select id="routeModeSelector" class="form-select">
-              <option>driving</option>
+              <option value="OSRM">OpenSourceRoutingMachine</option>
+              <option value="ORS">OpenRouteService</option>
+              <option>direkt</option>
+              <option>GraphHopper</option>
               <!-- <option>car</option>
               <option>bicycle</option>
               <option>foot</option> -->
-              <option>direkt</option>
             </select>
           </div>
           <!-- <a href="#">Link 1</a> -->
@@ -159,6 +161,9 @@
             <button id="uploadRouteButton" class="btn btn-primary">Ladda upp aktiv rutt</button>
           </td>
 
+          <td class="alignCellRight">
+            <button id="appViewClearMapButton" class="btn btn-danger">Rensa karta</button>
+          </td>
         </tr>
       </table>
 
