@@ -149,7 +149,8 @@ function fileLoader(fileData) {
       featureProjection: "EPSG:3857",
     });
     gpxFeatures.forEach(feature => {
-      console.log(feature.getGeometry().getType());
+      if (feature.get("styleUrl")) feature.unset("styleUrl"); // we do not need the styleUrl
+      console.log(feature.getProperties());
       if (loadAsProject) {
         if (feature.get("drawing")) {
           drawLayer.getSource().addFeature(feature);
@@ -161,14 +162,10 @@ function fileLoader(fileData) {
           addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
         } else {
           if (feature.getGeometry().getType() === "LineString") {
-            feature.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
-              routePointsLineString.appendCoordinate(coordinate);
-            });
+            feature.getGeometry().simplify(500).getCoordinates().forEach((coordinate) => routePointsLineString.appendCoordinate(coordinate));
           }
           if (feature.getGeometry().getType() === "MultiLineString") {
-            feature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
-              routePointsLineString.appendCoordinate(coordinate);
-            });
+            feature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach((coordinate) => routePointsLineString.appendCoordinate(coordinate));
           }
         }
         routeMe();
@@ -1130,7 +1127,7 @@ function openContextPopup(coordinate) {
       contextPopup.setPosition();
     }
     document.getElementById("convertGpxFeature").onclick = function () {
-      gpxFeatureToRemove.set("gpxFeature", false);
+      gpxFeatureToRemove.unset("gpxFeature");
       if (gpxFeatureToRemove.getGeometry().getType() === "LineString") {
         gpxFeatureToRemove.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
           routePointsLineString.appendCoordinate(coordinate);
