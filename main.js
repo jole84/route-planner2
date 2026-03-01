@@ -7,7 +7,7 @@ import { toStringXY } from "ol/coordinate";
 import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
 import Collection from 'ol/Collection.js';
-import { Polygon, MultiPolygon, Point, MultiLineString, LineString } from 'ol/geom';
+import { Point, MultiLineString, LineString } from 'ol/geom';
 import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
