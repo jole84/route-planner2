@@ -43,9 +43,9 @@ let qrCodeLink = new QRCode("qrRoutePlanner", {
   // height: 512,
 });
 
-localStorage.routeMode = document.getElementById("routeModeSelector").value = localStorage.routeMode || "OSRM";
+sessionStorage.routeMode = document.getElementById("routeModeSelector").value = sessionStorage.routeMode || "OSRM";
 document.getElementById("routeModeSelector").addEventListener("change", function (event) {
-  localStorage.routeMode = document.getElementById("routeModeSelector").value;
+  sessionStorage.routeMode = document.getElementById("routeModeSelector").value;
   routeMe();
 });
 
@@ -926,15 +926,17 @@ function routeMe() {
   const numberOfRoutePoints = routePointsLayer.getSource().getFeatures().length;
   voiceHintsLayer.getSource().clear();
   if (numberOfRoutePoints >= 2) {
-    const routeMode = localStorage.routeMode;
+    const routeMode = sessionStorage.routeMode;
     if (routeMode == "direkt") {
       routeLineString.setCoordinates([routePointsLineString.getCoordinates()]);
       trackLength = getLength(routePointsLineString) / 1000;
       document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+      document.getElementById("totalTime").innerHTML = "";
     }
     else if (routeMode == "ORS") routeMeORS();
     else if (routeMode == "OSRM") routeMeOSRM();
     else if (routeMode == "GraphHopper") routeMeGraphHopper();
+    else if (routeMode == "Geoapify") routeMeGeoapify();
   } else {
     routeLineString.setCoordinates([]);
   }
@@ -949,9 +951,9 @@ function routeMeOSRM() {
       straightPoints.push(feature.getId());
     }
   });
-  // localStorage.routeMode
+  // sessionStorage.routeMode
   // straightPoints
-  // ${localStorage.routeMode}
+  // ${sessionStorage.routeMode}
   const params = new URLSearchParams({
     // exclude: ["motorway"],
     // annotations: true,
@@ -1028,6 +1030,7 @@ function routeMeORS() {
       // },
     })
   }).then(response => {
+    console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
     return response.json();
   }).then(result => {
     console.log(result);
@@ -1050,8 +1053,6 @@ function routeMeORS() {
 }
 
 function routeMeGraphHopper() {
-  console.log(localStorage.routeMode);
-
   const coordsString = [];
   routePointsLayer.getSource().forEachFeature(function (feature) {
     coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates());
@@ -1065,26 +1066,26 @@ function routeMeGraphHopper() {
     // algorithm: "round_trip",
     // "round_trip.distance": 10000,
     // "round_trip.seed": 5,
-    
+
     // snap_preventions: ["motorway","ferry","tunnel"],
 
     // optimize: true,
-    
+
     // "ch.disable": true, // "Free packages cannot use flexible mode"
     // custom_model: {
-      // speed: [
-      //   {
-      //     if: true,
-      //     limit_to: 100
-      //   }
-      // ],
-      // priority: [
-      //   {
-      //     if: "road_class == MOTORWAY",
-      //     multiply_by: "0"
-      //   }
-      // ],
-      // distance_influence: 100
+    // speed: [
+    //   {
+    //     if: true,
+    //     limit_to: 100
+    //   }
+    // ],
+    // priority: [
+    //   {
+    //     if: "road_class == MOTORWAY",
+    //     multiply_by: "0"
+    //   }
+    // ],
+    // distance_influence: 100
     // }
   }
 
@@ -1117,6 +1118,62 @@ function routeMeGraphHopper() {
   });
 
 }
+
+function routeMeGeoapify() {
+  const coordsString = [];
+  routePointsLayer.getSource().forEachFeature(function (feature) {
+    coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates()).reverse();
+  });
+
+  const requestOptions = {
+    method: "GET",
+    redirect: "follow"
+  };
+
+  const params = new URLSearchParams({
+    waypoints: coordsString.join("|"),
+    mode: "drive",
+    // mode: "truck",
+    // mode: "heavy_truck",
+    // mode: "long_truck",
+    // mode: "motorcycle",
+    apiKey: "37b5aef31feb4406b91a1ba40f718777",
+    // avoid: "highways",
+    lang: "sv",
+    // details: "instruction_details",
+    // traffic: "approximated",
+    // max_speed: 80,
+    // avoid: "location:57.893118,14.371427",
+    // type: "balanced",
+    // type: "short",
+    // type: "less_maneuvers",
+  });
+
+  fetch('https://api.geoapify.com/v1/routing?' + params, requestOptions
+  ).then(response => {
+    // response.headers.forEach((val, key) => {
+    //   console.log(key, val);
+    // });
+    // console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
+    return response.json();
+  }).then(result => {
+    console.log(result);
+    const format = new GeoJSON();
+    const newGeometry = format.readFeature((result.features[0].geometry), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
+
+    trackLength = result.features[0].properties.distance / 1000;
+    const totalTime = result.features[0].properties.time * 1000;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+    routeLineString.setCoordinates([newGeometry.getGeometry().getLineString().getCoordinates()]);
+  });
+
+}
+
 // add context menu popup
 const contextPopupDiv = document.getElementById('contextPopup');
 const contextPopupContent = document.getElementById("contextPopupContent");
