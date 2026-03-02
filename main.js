@@ -1315,6 +1315,7 @@ map.addEventListener("click", function (event) {
       // hide if visible
       contextPopup.setPosition();
     } else {
+      searchName = "";
       openContextPopup(event.coordinate);
     }
   }
@@ -1406,7 +1407,7 @@ document.getElementById("addPoiButton").addEventListener("click", function () {
   menuDivcontent.replaceChildren(savePoiNameInput);
   contextPopup.setPosition();
   poiFileName.select();
-  poiFileName.placeholder = toStringXY(toLonLat(poiPosition).reverse(), 5);
+  poiFileName.placeholder = searchName || toStringXY(toLonLat(poiPosition).reverse(), 5);
 });
 
 document.getElementById("editPoiButton").addEventListener("click", function () {
@@ -1755,3 +1756,46 @@ function editItem(u) {
   api("update_item", { id: u.id, name: name, text: text })
     .then(() => loadData());
 }
+
+
+let searchName = "";
+document.getElementById("searchInput").addEventListener("change", () => {
+  const searchString = document.getElementById("searchInput").value;
+
+  if (searchString == "") return;
+  const requestOptions = {
+    method: "GET",
+  };
+
+  const params = new URLSearchParams({
+    text: searchString,
+    apiKey: "37b5aef31feb4406b91a1ba40f718777",
+    lang: "sv",
+    limit: 1,
+    filter:"countrycode:se",
+    bias: "proximity:" + toLonLat(view.getCenter()).join(","),
+  });
+
+  fetch('https://api.geoapify.com/v1/geocode/search?' + params, requestOptions
+  ).then(response => {
+    return response.json();
+  }).then(result => {
+    console.log(result);
+    try {
+      const foundFeature = result.features[0];
+      const resultCoordinate = fromLonLat(foundFeature.geometry.coordinates);
+      searchName = foundFeature.properties.name || foundFeature.properties.formatted;
+      openContextPopup(resultCoordinate);
+      // view.animate({
+      //   center: resultCoordinate,
+      //   zoom: 15,
+      // });
+      view.setCenter(resultCoordinate);
+      view.setZoom(15);
+    } catch (error) {
+      console.log(error);
+      searchName = "";
+    }
+      
+  });
+})
