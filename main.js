@@ -36,6 +36,7 @@ const poiFileName = document.getElementById("poiFileName");
 let trackLength = 0;
 let poiPosition;
 let enableVoiceHint = false;
+let avoidHigways = false;
 let qrCodeLink = new QRCode("qrRoutePlanner", {
   text: "https://jole84.se/nav-app/index.html",
   correctLevel: QRCode.CorrectLevel.M,
@@ -56,6 +57,7 @@ localStorage.mapMode = localStorage.mapMode || 0; // default map
 document.getElementById("openInfoButton").addEventListener("click", () => {
   menuDivcontent.replaceChildren(menuItems);
   document.getElementById("enableVoiceHint").checked = enableVoiceHint;
+  document.getElementById("avoidHigways").checked = avoidHigways;
 });
 let enableTouchControls = document.getElementById("enableTouchControls").checked;
 document.getElementById("enableTouchControls").addEventListener("change", function () {
@@ -65,6 +67,10 @@ document.getElementById("enableTouchControls").addEventListener("change", functi
 });
 document.getElementById("enableVoiceHint").addEventListener("change", function () {
   enableVoiceHint = document.getElementById("enableVoiceHint").checked;
+  routeMe();
+});
+document.getElementById("avoidHigways").addEventListener("change", function () {
+  avoidHigways = document.getElementById("avoidHigways").checked;
   routeMe();
 });
 document.getElementById("menuDivCloseButton").addEventListener("click", () => {
@@ -937,6 +943,7 @@ function routeMe() {
     else if (routeMode == "OSRM") routeMeOSRM();
     else if (routeMode == "GraphHopper") routeMeGraphHopper();
     else if (routeMode == "Geoapify") routeMeGeoapify();
+    else if (routeMode == "Google") routeMeGoogle();
   } else {
     routeLineString.setCoordinates([]);
   }
@@ -1003,7 +1010,7 @@ function routeMeORS() {
     }
   });
 
-  fetch(`https://api.openrouteservice.org/v2/directions/driving-car/geojson?`, {
+  const requestBody = {
     method: "post",
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
@@ -1020,16 +1027,19 @@ function routeMeORS() {
       // maximum_speed: 85,
       // skip_segments: [1],
 
-      // options: {
-      // avoid_features: ["highways"],
+      options: {
+      avoid_features: avoidHigways ? ["highways"] : [],
       // round_trip: {
       //   length: 100000,
       //   points: 2,
       //   seed: 5
       // }
-      // },
+      },
     })
-  }).then(response => {
+  };
+
+  fetch(`https://api.openrouteservice.org/v2/directions/driving-car/geojson?`, requestBody
+  ).then(response => {
     console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
     return response.json();
   }).then(result => {
@@ -1137,7 +1147,7 @@ function routeMeGeoapify() {
     // mode: "heavy_truck",
     // mode: "long_truck",
     // mode: "motorcycle",
-    apiKey: "37b5aef31feb4406b91a1ba40f718777",
+    apiKey: import.meta.env.VITE_GEOAPIFY_API_KEY,
     // avoid: "highways",
     lang: "sv",
     // details: "instruction_details",
@@ -1148,6 +1158,8 @@ function routeMeGeoapify() {
     // type: "short",
     // type: "less_maneuvers",
   });
+
+  if (avoidHigways) params.append("avoid", "highways");
 
   fetch('https://api.geoapify.com/v1/routing?' + params, requestOptions
   ).then(response => {
@@ -1172,6 +1184,102 @@ function routeMeGeoapify() {
     routeLineString.setCoordinates([newGeometry.getGeometry().getLineString().getCoordinates()]);
   });
 
+}
+
+import Polyline from 'ol/format/Polyline.js';
+function routeMeGoogle() {
+  console.log("routeMeGoogle started...");
+
+  const points = [];
+
+  routePointsLayer.getSource().forEachFeature(function (feature) {
+    const coords = toLonLat(feature.getGeometry().getCoordinates());
+    points[feature.getId()] = { latitude: coords[1], longitude: coords[0] };
+  });
+
+  // const points = routePointsLayer.getSource().getFeatures().map(feature => {
+  //   const coords = toLonLat(feature.getGeometry().getCoordinates());
+  //   return { latitude: coords[1], longitude: coords[0] };
+  // });
+
+  if (points.length < 2) return console.error("Need at least 2 points");
+
+  const origin = { location: { latLng: points[0] } };
+  const destination = { location: { latLng: points[points.length - 1] } };
+  const intermediates = points.slice(1, -1).map(p => ({ location: { latLng: p } }));
+
+  let FieldMask = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'
+  // if (enableVoiceHint) FieldMask += ',routes.legs'
+  if (enableVoiceHint) FieldMask += ',routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.startLocation';
+
+  const requestBody = {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+      // FieldMask determines the cost/data returned
+      'X-Goog-FieldMask': FieldMask,
+    },
+    body: JSON.stringify({
+      origin,
+      destination,
+      intermediates,
+      travelMode: 'DRIVE',
+      // routingPreference: 'TRAFFIC_AWARE',
+      routingPreference: 'TRAFFIC_UNAWARE',
+      units: 'METRIC',
+      languageCode: 'sv-SE',
+      routeModifiers: {
+        // avoidTolls: true,
+        // avoidFerries: true,
+        avoidHighways: avoidHigways,
+      },
+    }),
+  };
+
+  fetch('https://routes.googleapis.com/directions/v2:computeRoutes', requestBody
+  ).then(response => {
+    return response.json();
+  }).then(result => {
+    console.log(result);
+
+    const format = new Polyline();
+    const newGeometry = format.readFeature((result.routes[0].polyline.encodedPolyline), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
+
+    voiceHintsLayer.getSource().clear();
+    if (enableVoiceHint) {
+      const legs = result.routes[0].legs;
+      legs.forEach(leg => {
+        const steps = leg.steps;
+        steps.forEach(step => {
+          console.log(step);
+          const instructionText = step.navigationInstruction.instructions;
+          const distance = step.distanceMeters;
+
+          const stepManeuverCoordinates = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
+          const marker = new Feature({
+            name: instructionText,
+            geometry: new Point(stepManeuverCoordinates),
+          });
+          voiceHintsLayer.getSource().addFeature(marker);
+
+          console.log(distance);
+          console.log(instructionText);
+        });
+      });
+    }
+
+    trackLength = result.routes[0].distanceMeters / 1000;
+    const totalTime = result.routes[0].duration.replace("s", "") * 1000;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+
+    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+  });
 }
 
 // add context menu popup
@@ -1767,12 +1875,14 @@ document.getElementById("searchInput").addEventListener("change", () => {
     method: "GET",
   };
 
+  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
+
   const params = new URLSearchParams({
     text: searchString,
-    apiKey: "37b5aef31feb4406b91a1ba40f718777",
+    apiKey: apiKey,
     lang: "sv",
     limit: 1,
-    filter:"countrycode:se",
+    filter: "countrycode:se",
     bias: "proximity:" + toLonLat(view.getCenter()).join(","),
   });
 
@@ -1796,6 +1906,6 @@ document.getElementById("searchInput").addEventListener("change", () => {
       console.log(error);
       searchName = "";
     }
-      
+
   });
 })
