@@ -17,17 +17,6 @@
 
 <body>
 
-  <!-- crosshair -->
-  <div id="crosshairContainer">
-    <svg id="crosshair" version="1.1" height="60" width="60" xmlns="http://www.w3.org/2000/svg"
-      xmlns:svg="http://www.w3.org/2000/svg">
-      <line x1="30" y1="0" x2="30" y2="27" style="stroke:rgb(255,0,0);stroke-width:4" id="line1" />
-      <line x1="0" y1="30" x2="27" y2="30" style="stroke:rgb(255,0,0);stroke-width:4" id="line2" />
-      <line x1="30" y1="33" x2="30" y2="60" style="stroke:rgb(255,0,0);stroke-width:4" id="line3" />
-      <line x1="33" y1="30" x2="60" y2="30" style="stroke:rgb(255,0,0);stroke-width:4" id="line4" />
-    </svg>
-  </div>
-
   <div id="mainContainer">
 
     <div class="navbar">
@@ -101,6 +90,18 @@
 
 
     <div id="map">
+
+      <!-- crosshair -->
+      <div id="crosshairContainer">
+        <svg id="crosshair" version="1.1" height="100" width="100" xmlns="http://www.w3.org/2000/svg"
+          xmlns:svg="http://www.w3.org/2000/svg">
+          <line x1="50" y1="0" x2="50" y2="40" style="stroke:rgb(255,0,0);stroke-width:4" id="line1" />
+          <line x1="0" y1="50" x2="40" y2="50" style="stroke:rgb(255,0,0);stroke-width:4" id="line2" />
+          <line x1="50" y1="60" x2="50" y2="100" style="stroke:rgb(255,0,0);stroke-width:4" id="line3" />
+          <line x1="60" y1="50" x2="100" y2="50" style="stroke:rgb(255,0,0);stroke-width:4" id="line4" />
+          <circle r="3" cx="50" cy="50" fill="red" />
+        </svg>
+      </div>
       <!-- infoGroup -->
       <div id="infoGroup">
         <div id="currentLoadedName" class="bold"></div>
