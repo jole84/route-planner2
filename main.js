@@ -307,6 +307,7 @@ document.getElementById("gpxOpacity").addEventListener("change", function () {
 });
 document.getElementById("clearMapButton").onclick = clearMap;
 document.getElementById("appViewClearMapButton").onclick = clearMap;
+document.getElementById("appViewClearMapButton2").onclick = clearMap;
 
 function clearMap() {
   document.getElementById("currentLoadedName").innerHTML = "";
@@ -385,12 +386,13 @@ const opentopomap = new TileLayer({
 
 // vector layers:
 const routeLineString = new MultiLineString([]);
-const routeLineLayer = new VectorLayer({
-  source: new VectorSource({
-    features: [new Feature({
+const routeLineStringFeature = new Feature({
       geometry: routeLineString,
       routeLineString: true,
-    })],
+    })
+const routeLineLayer = new VectorLayer({
+  source: new VectorSource({
+    features: [routeLineStringFeature],
   }),
   style: function (feature) {
     return new Style({
@@ -401,6 +403,10 @@ const routeLineLayer = new VectorLayer({
     })
   }
 });
+
+routeLineString.addEventListener("change", () => {
+  routeLineStringFeature.set("routeMode", sessionStorage.routeMode);
+})
 
 const routePointStyle = {
   startPoint: new Style({
@@ -943,7 +949,7 @@ function routeMe() {
     else if (routeMode == "OSRM") routeMeOSRM();
     else if (routeMode == "GraphHopper") routeMeGraphHopper();
     else if (routeMode == "Geoapify") routeMeGeoapify();
-    else if (routeMode == "Google") routeMeGoogle();
+    else if (routeMode == "google") routeMeGoogle();
   } else {
     routeLineString.setCoordinates([]);
   }
@@ -1188,10 +1194,7 @@ function routeMeGeoapify() {
 
 import Polyline from 'ol/format/Polyline.js';
 function routeMeGoogle() {
-  console.log("routeMeGoogle started...");
-
   const points = [];
-
   routePointsLayer.getSource().forEachFeature(function (feature) {
     const coords = toLonLat(feature.getGeometry().getCoordinates());
     points[feature.getId()] = { latitude: coords[1], longitude: coords[0] };
@@ -1618,9 +1621,6 @@ async function api(action, data = {}) {
 
 async function loadData() {
   const r = await api("list");
-  // const username = localStorage.getItem("username");
-
-  console.log(r.uploads);
 
   document.getElementById("uploads").replaceChildren();
   r.uploads.forEach(u => {
@@ -1639,7 +1639,7 @@ async function loadData() {
     elementText.innerHTML = u.item_name;
     elementText.classList.add("user-select-all");
     elementText.classList.add("bold");
-    elementText.title = "Klicka för att kopiera länk";
+    elementText.title = "Klicka för att kopiera länk\n" + "https://jole84.se/nav-app/index.html?getId=" + u.id;
     elementText.href = "https://jole84.se/nav-app/index.html?getId=" + u.id;
     cell1.appendChild(elementText);
 
@@ -1822,6 +1822,7 @@ async function loadItem(u) {
   document.getElementById("currentLoadedName").innerHTML = u.item_name;
   newGeometry.forEach(element => {
     if (!!element.get("routeLineString")) {
+      document.getElementById("routeModeSelector").value = sessionStorage.routeMode = element.get("routeMode") || "OSRM";
       routeLineString.setCoordinates(element.getGeometry().getCoordinates());
     } else if (!!element.get("poi")) {
       poiLayer.getSource().addFeature(element);

@@ -57,7 +57,7 @@
               <option value="ORS">OpenRouteService</option>
               <option>GraphHopper</option>
               <option>Geoapify</option>
-              <option>Google</option>
+              <option value="google">Google Maps API</option>
               <option>direkt</option>
               <!-- <option>car</option>
               <option>bicycle</option>
@@ -135,21 +135,24 @@
 
   <!-- menu contents -->
   <div class="invisible">
-
     <div id="routeStorageMenu">
+
+      <!-- loginView table -->
       <table id="loginView">
         <tr>
           <td>
             <h2>Login (auto-register)</h2>
-          </td>
-          <td>
             <input id="username" placeholder="Username"><br><br>
             <input id="password" type="password" placeholder="Password"><br>
             <button id="loginButton">Login</button>
           </td>
+          <td class="alignCellRight alignCellBottom">
+            <button id="appViewClearMapButton2" class="btn btn-danger">Rensa karta</button>
+          </td>
         </tr>
       </table>
 
+      <!-- appView table -->
       <table id="appView" class="invisible">
         <tr>
           <td>
@@ -188,8 +191,10 @@
         och Trafikverket. Navigation från
         <a href="https://project-osrm.org/">OSRM</a>,
         <a href="https://www.graphhopper.com/">GraphHopper</a>,
+        <br>
         <a href="https://openrouteservice.org/">openrouteservice</a>,
-        <a href="https://www.geoapify.com/">Geoapify</a>.
+        <a href="https://www.geoapify.com/">Geoapify</a>,
+        <a href="https://developers.google.com/maps/">Google Maps API</a>.
       </div>
 
       <div><kbd>Högerklick</kbd> lägg till/ta bort waypoint</div>
