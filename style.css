@@ -13,6 +13,7 @@ body {
   background-color: #bfe6ff;
   flex-grow: 1;
   display: flex;
+  cursor: crosshair;
 }
 
 #mainContainer {

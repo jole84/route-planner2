@@ -93,13 +93,13 @@
 
       <!-- crosshair -->
       <div id="crosshairContainer">
-        <svg id="crosshair" version="1.1" height="100" width="100" xmlns="http://www.w3.org/2000/svg"
+        <svg id="crosshair" version="1.1" height="60" width="60" xmlns="http://www.w3.org/2000/svg"
           xmlns:svg="http://www.w3.org/2000/svg">
-          <line x1="50" y1="0" x2="50" y2="40" style="stroke:rgb(255,0,0);stroke-width:4" id="line1" />
-          <line x1="0" y1="50" x2="40" y2="50" style="stroke:rgb(255,0,0);stroke-width:4" id="line2" />
-          <line x1="50" y1="60" x2="50" y2="100" style="stroke:rgb(255,0,0);stroke-width:4" id="line3" />
-          <line x1="60" y1="50" x2="100" y2="50" style="stroke:rgb(255,0,0);stroke-width:4" id="line4" />
-          <circle r="3" cx="50" cy="50" fill="red" />
+          <line x1="30" y1="0" x2="30" y2="22" style="stroke:rgb(255,0,0);stroke-width:4" id="line1" />
+          <line x1="0" y1="30" x2="22" y2="30" style="stroke:rgb(255,0,0);stroke-width:4" id="line2" />
+          <line x1="30" y1="38" x2="30" y2="60" style="stroke:rgb(255,0,0);stroke-width:4" id="line3" />
+          <line x1="38" y1="30" x2="60" y2="30" style="stroke:rgb(255,0,0);stroke-width:4" id="line4" />
+          <circle r="3" cx="30" cy="30" fill="red" />
         </svg>
       </div>
       <!-- infoGroup -->
@@ -223,33 +223,19 @@
       </div>
     </div>
 
-    <!-- savePOINameInput -->
-    <div id="savePoiNameInput">
-      Ange POI namn:
-      <input class="form-control" id="poiFileName" type="text" />
-      <div class="alignRight">
-        <button id="savePoiOkButton" class="btn btn-success">ok</button>
-      </div>
-    </div>
-
     <!-- contextPopup dialog -->
     <div id="contextPopup">
       <div id="contextPopupCloser" class="alignRight">✖</div>
       <div title="Kopiera koordinater" class="routeControl bold" id="contextPopupContent"></div>
       <div class="routeControl" id="gmaplink">Visa på Google Maps</div>
       <div class="routeControl" id="streetviewlink">Visa Streetview</div>
-      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/images/poi-marker.svg">
-        Lägg till
-        POI</div>
+      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/images/poi-marker.svg">Lägg till POI</div>
+      <div class="routeControl" id="addRoutePosition"><img height="15rem" src="https://jole84.se/images/start-marker.svg"> Lägg till ruttpunkt</div>
+      <div class="routeControl invisible" id="convertGpxFeature">Omvandla GPX</div>
+      <div class="routeControl invisible" id="removeRoutePosition"><img height="15rem" src="https://jole84.se/images/end-marker.svg"> Ta bort ruttpunkt</div>
       <div class="routeControl invisible" id="editPoiButton">Byt namn på POI</div>
       <div class="routeControl invisible" id="removePoiButton">✖ Ta bort POI</div>
-      <div class="routeControl" id="addRoutePosition"><img height="15rem"
-          src="https://jole84.se/images/start-marker.svg"> Lägg
-        till ruttpunkt</div>
-      <div class="routeControl invisible" id="removeRoutePosition"><img height="15rem"
-          src="https://jole84.se/images/end-marker.svg"> Ta bort ruttpunkt</div>
       <div class="routeControl invisible" id="removeDrawing">Ta bort markering</div>
-      <div class="routeControl invisible" id="convertGpxFeature">Omvandla GPX</div>
       <div class="routeControl invisible" id="removeGpxFeature">Ta bort GPX</div>
     </div>
   </div>
