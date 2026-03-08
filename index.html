@@ -47,6 +47,7 @@
               <option>GraphHopper</option>
               <option>Geoapify</option>
               <option value="google">Google Maps API</option>
+              <option value="valhalla">Valhalla</option>
               <option>direkt</option>
               <!-- <option>car</option>
               <option>bicycle</option>
@@ -57,12 +58,12 @@
 
           <div class="dropdownItem">
             <input class="form-check-input" role="switch" type="checkbox" id="enableVoiceHint">
-            <label class="form-check-label" for="enableVoiceHint">Körinstruktioner (OSRM, Google)</label>
+            <label class="form-check-label" for="enableVoiceHint">Körinstruktioner (OSRM, Google, Valhalla)</label>
           </div>
 
           <div class="dropdownItem">
             <input class="form-check-input" role="switch" type="checkbox" id="avoidHigways">
-            <label class="form-check-label" for="avoidHigways">Undvik motorväg (ORS, Geoapify, Google)</label>
+            <label class="form-check-label" for="avoidHigways">Undvik motorväg (ORS, Geoapify, Google, Valhalla)</label>
           </div>
 
           <div class="dropdownItem">
@@ -195,7 +196,9 @@
         <br>
         <a href="https://openrouteservice.org/">openrouteservice</a>,
         <a href="https://www.geoapify.com/">Geoapify</a>,
-        <a href="https://developers.google.com/maps/">Google Maps API</a>.
+        <a href="https://developers.google.com/maps/">Google Maps API</a>,
+        <a href="https://github.com/valhalla/valhalla">Valhalla</a>
+        .
       </div>
 
       <div><kbd>Högerklick</kbd> lägg till/ta bort waypoint</div>
