@@ -1236,36 +1236,33 @@ function routeMeGoogle() {
       featureProjection: "EPSG:3857"
     });
 
-    voiceHintsLayer.getSource().clear();
-    if (enableVoiceHint) {
-      const legs = result.routes[0].legs;
-      legs.forEach(leg => {
-        const steps = leg.steps;
-        steps.forEach(step => {
-          console.log(step);
-          const instructionText = step.navigationInstruction.instructions;
-          const distance = step.distanceMeters;
-
-          const stepManeuverCoordinates = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
-          const marker = new Feature({
-            name: instructionText,
-            geometry: new Point(stepManeuverCoordinates),
-          });
-          voiceHintsLayer.getSource().addFeature(marker);
-
-          console.log(distance);
-          console.log(instructionText);
-        });
-      });
-    }
-
     trackLength = result.routes[0].distanceMeters / 1000;
     const totalTime = result.routes[0].duration.replace("s", "") * 1000;
     document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
     document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-
+    
     routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+
+    voiceHintsLayer.getSource().clear();
+    if (enableVoiceHint) {
+      // let maneuverDistance = 0;
+      result.routes[0].legs.forEach(leg => {
+        leg.steps.forEach(step => {
+          console.log(step);
+
+          // const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
+          // maneuverDistance += step.distanceMeters / 1000;
+          const maneuverCoordinate = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
+          
+          const instructionText = step.navigationInstruction.instructions;
+          const marker = new Feature({
+            name: instructionText,
+            geometry: new Point(maneuverCoordinate),
+          });
+          voiceHintsLayer.getSource().addFeature(marker);
+        });
+      });
+    }
   });
 }
 
