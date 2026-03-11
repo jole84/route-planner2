@@ -39,6 +39,12 @@
           <div id="reverseRoute" class="dropdownItem">Vänd rutt</div>
 
           <div id="openInfoButton" class="dropdownItem ">Info</div>
+
+          <div class="dropdownItem">
+            <input class="form-check-input" role="switch" type="checkbox" id="enableClickToAdd">
+            <label class="form-check-label" for="enableClickToAdd">Klicka för att lägga till/ta bort waypoints</label>
+          </div>
+
           <div class="dropdownItem">
             routeModeSelector:
             <select id="routeModeSelector" class="form-select">
@@ -144,9 +150,9 @@
         <tr>
           <td>
             <h2>Login (auto-register)</h2>
-            <input id="username" placeholder="Username"><br><br>
-            <input id="password" type="password" placeholder="Password"><br>
-            <button id="loginButton">Login</button>
+            <input id="username" class="form-control" placeholder="Username"><br>
+            <input id="password" class="form-control" type="password" placeholder="Password"><br>
+            <button id="loginButton" class="btn btn-info">Login</button>
           </td>
           <td class="alignCellRight alignCellBottom">
             <button id="appViewClearMapButton2" class="btn btn-danger">Rensa karta</button>
@@ -159,20 +165,20 @@
         <tr>
           <td>
             Logged in as <strong id="userLabel"></strong><br>
-            <button id="logoutButton">Logout</button>
-            <button id="deleteUserButton" class="danger">Delete User</button>
+            <button id="logoutButton" class="btn btn-info">Logout</button>
+            <button id="deleteUserButton" class="btn btn-danger">Delete User</button>
           </td>
           <td>
-            <input id="oldPassword" type="password" placeholder="Old password"><br>
-            <input id="newPassword" type="password" placeholder="New password"><br>
-            <input id="verifyNewPassword" type="password" placeholder="Verify new password">
-            <button id="changePasswordButton">Change Password</button>
+            <input id="oldPassword" class="form-control" type="password" placeholder="Old password"><br>
+            <input id="newPassword" class="form-control" type="password" placeholder="New password"><br>
+            <input id="verifyNewPassword" class="form-control" type="password" placeholder="Verify new password">
+            <button id="changePasswordButton" class="btn btn-warning">Change Password</button>
           </td>
         </tr>
         <tr>
 
           <td>
-            <button id="uploadRouteButton" class="btn btn-primary">Ladda upp aktiv rutt</button>
+            <button id="uploadRouteButton" class="btn btn-primary">Ladda upp ny rutt</button>
           </td>
 
           <td class="alignCellRight">
@@ -188,8 +194,7 @@
     <div id="menuItems">
       <div><img src="https://jole84.se/images/84.svg" height="30"></div>
       <div>Jole84 ruttplanerare med <a href="https://github.com/jole84/route-planner2">öppen källkod</a>, karta skapad
-        av
-        öppna<br> data från Lantmäteriet
+        av öppna<br> data från Lantmäteriet
         och Trafikverket. Navigation från
         <a href="https://project-osrm.org/">OSRM</a>,
         <a href="https://www.graphhopper.com/">GraphHopper</a>,
@@ -232,10 +237,13 @@
       <div title="Kopiera koordinater" class="routeControl bold" id="contextPopupContent"></div>
       <div class="routeControl" id="gmaplink">Visa på Google Maps</div>
       <div class="routeControl" id="streetviewlink">Visa Streetview</div>
-      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/images/poi-marker.svg">Lägg till POI</div>
-      <div class="routeControl" id="addRoutePosition"><img height="15rem" src="https://jole84.se/images/start-marker.svg"> Lägg till ruttpunkt</div>
+      <div class="routeControl" id="addPoiButton"><img height="15rem" src="https://jole84.se/images/poi-marker.svg">Lägg
+        till POI</div>
+      <div class="routeControl" id="addRoutePosition"><img height="15rem"
+          src="https://jole84.se/images/start-marker.svg"> Lägg till ruttpunkt</div>
       <div class="routeControl invisible" id="convertGpxFeature">Omvandla GPX</div>
-      <div class="routeControl invisible" id="removeRoutePosition"><img height="15rem" src="https://jole84.se/images/end-marker.svg"> Ta bort ruttpunkt</div>
+      <div class="routeControl invisible" id="removeRoutePosition"><img height="15rem"
+          src="https://jole84.se/images/end-marker.svg"> Ta bort ruttpunkt</div>
       <div class="routeControl invisible" id="editPoiButton">Byt namn på POI</div>
       <div class="routeControl invisible" id="removePoiButton">✖ Ta bort POI</div>
       <div class="routeControl invisible" id="removeDrawing">Ta bort markering</div>

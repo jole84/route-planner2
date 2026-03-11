@@ -32,6 +32,7 @@ const routeStorageMenu = document.getElementById("routeStorageMenu");
 
 let trackLength = 0;
 let poiPosition;
+let enableClickToAdd = document.getElementById("enableClickToAdd").checked;
 let enableVoiceHint = false;
 let avoidHigways = false;
 let qrCodeLink = new QRCode("qrRoutePlanner", {
@@ -63,6 +64,11 @@ document.getElementById("enableTouchControls").addEventListener("change", functi
   document.getElementById("crosshair").style.display = enableTouchControls ? "unset" : "none";
   document.getElementById("lowerRightGroup").style.display = enableTouchControls ? "inline" : "none";
 });
+
+document.getElementById("enableClickToAdd").addEventListener("change", function () {
+  enableClickToAdd = document.getElementById("enableClickToAdd").checked;
+});
+
 document.getElementById("enableVoiceHint").addEventListener("change", function () {
   enableVoiceHint = document.getElementById("enableVoiceHint").checked;
   routeMe();
@@ -635,6 +641,7 @@ const poiLayer = new VectorLayer({
       }),
     });
   },
+  triggerPointer: true,
 });
 const modifyPoiLayer = new Modify({ source: poiLayer.getSource() });
 
@@ -735,6 +742,7 @@ const gpxLayer = new VectorLayer({
   source: new VectorSource(),
   style: gpxStyle,
   declutter: true,
+  triggerPointer: true,
 });
 
 let lineStringId = 0;
@@ -804,7 +812,8 @@ const drawLayer = new VectorLayer({
         padding: [2, 0, 0, 2],
       }),
     })
-  }
+  },
+  triggerPointer: true,
 });
 
 const newDrawFeature = new Feature({
@@ -922,6 +931,7 @@ function routeMe() {
   voiceHintsLayer.getSource().clear();
   if (numberOfRoutePoints >= 2) {
     const routeMode = sessionStorage.routeMode;
+    console.log("Starting routeMe, routeMode: " + routeMode);
     if (routeMode == "direkt") {
       routeLineString.setCoordinates([routePointsLineString.getCoordinates()]);
       trackLength = getLength(routePointsLineString) / 1000;
@@ -1549,7 +1559,9 @@ function openContextPopup(coordinate) {
 }
 
 map.addEventListener("click", function (event) {
-  if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls) {
+  if (contextPopup.getPosition()) return contextPopup.setPosition(); // remove contextPopup if visible
+
+  if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls && enableClickToAdd) {
     const hit = map.hasFeatureAtPixel(event.pixel, {
       layerFilter: layerCandidate => layerCandidate.get("routePointsLayer"),
       hitTolerance: 10,
@@ -1595,18 +1607,22 @@ map.addEventListener("contextmenu", function (event) {
 
 map.on("pointermove", function (evt) {
   const hit = map.hasFeatureAtPixel(evt.pixel, {
-    layerFilter: layerCandidate => !layerCandidate.get("newTileLayer"),
-    hitTolerance: 10,
+    layerFilter: layerCandidate => layerCandidate.get("triggerPointer"),
+    hitTolerance: 5,
   });
 
   if (hit) {
-    map.forEachFeatureAtPixel(evt.pixel, feature => {
-      // if (feature.get("poi")) this.getTargetElement().style.cursor = "context-menu";
-      if (feature.get("routePointMarker")) this.getTargetElement().style.cursor = "no-drop"
-      else this.getTargetElement().style.cursor = "pointer";
-    })
+    this.getTargetElement().style.cursor = "pointer";
+  //   map.forEachFeatureAtPixel(evt.pixel, feature => {
+  //     // if (feature.get("poi")) this.getTargetElement().style.cursor = "context-menu";
+  //     if (feature.get("routePointMarker")) this.getTargetElement().style.cursor = "no-drop"
+  //     else this.getTargetElement().style.cursor = "pointer";
+  //   })
   } else {
-    this.getTargetElement().style.cursor = "crosshair";
+  //   if (!enableClickToAdd) this.getTargetElement().style.cursor = "pointer";
+  //   else 
+  if (enableClickToAdd) this.getTargetElement().style.cursor = "crosshair";
+  else this.getTargetElement().style.cursor = "auto";
   }
 });
 

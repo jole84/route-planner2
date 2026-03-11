@@ -30,6 +30,14 @@ body {
   display: none;
 }
 
+#uploads tr:nth-child(even) {
+  background-color: #e7e7e7;
+}
+
+#uploads {
+  border-collapse: collapse;
+}
+
 #crosshairContainer {
   width: 100%;
   height: -webkit-fill-available;
