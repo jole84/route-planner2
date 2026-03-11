@@ -1250,7 +1250,7 @@ function routeMeGoogle() {
     const totalTime = result.routes[0].duration.replace("s", "") * 1000;
     document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
     document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-    
+
     routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
 
     voiceHintsLayer.getSource().clear();
@@ -1263,7 +1263,7 @@ function routeMeGoogle() {
           // const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
           // maneuverDistance += step.distanceMeters / 1000;
           const maneuverCoordinate = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
-          
+
           const instructionText = step.navigationInstruction.instructions;
           const marker = new Feature({
             name: instructionText,
@@ -1613,16 +1613,16 @@ map.on("pointermove", function (evt) {
 
   if (hit) {
     this.getTargetElement().style.cursor = "pointer";
-  //   map.forEachFeatureAtPixel(evt.pixel, feature => {
-  //     // if (feature.get("poi")) this.getTargetElement().style.cursor = "context-menu";
-  //     if (feature.get("routePointMarker")) this.getTargetElement().style.cursor = "no-drop"
-  //     else this.getTargetElement().style.cursor = "pointer";
-  //   })
+    //   map.forEachFeatureAtPixel(evt.pixel, feature => {
+    //     // if (feature.get("poi")) this.getTargetElement().style.cursor = "context-menu";
+    //     if (feature.get("routePointMarker")) this.getTargetElement().style.cursor = "no-drop"
+    //     else this.getTargetElement().style.cursor = "pointer";
+    //   })
   } else {
-  //   if (!enableClickToAdd) this.getTargetElement().style.cursor = "pointer";
-  //   else 
-  if (enableClickToAdd) this.getTargetElement().style.cursor = "crosshair";
-  else this.getTargetElement().style.cursor = "auto";
+    //   if (!enableClickToAdd) this.getTargetElement().style.cursor = "pointer";
+    //   else 
+    if (enableClickToAdd) this.getTargetElement().style.cursor = "crosshair";
+    else this.getTargetElement().style.cursor = "auto";
   }
 });
 
@@ -1828,6 +1828,7 @@ async function loadData() {
     // cell2.classList.add("bold");
     // ladda knapp
     const loadButton = document.createElement("button");
+    loadButton.classList.add("btn", "btn-primary");
     loadButton.addEventListener("click", () => { loadItem(u) });
     loadButton.innerHTML = "Ladda";
     cell3.appendChild(loadButton);
@@ -1835,12 +1836,15 @@ async function loadData() {
     if (!!localStorage.token && u.username == localStorage.username) {
       // ta bort knapp
       const removeButton = document.createElement("button");
+      removeButton.classList.add("btn", "btn-danger");
+
       removeButton.addEventListener("click", () => { deleteUpload(u) });
       removeButton.innerHTML = "Ta bort";
       cell4.appendChild(removeButton);
 
       // växla privat knapp
       const makePublicButton = document.createElement("button");
+      makePublicButton.classList.add("btn", is_public ? "btn-success" : "btn-warning");
       makePublicButton.addEventListener("click", () => {
         is_public ? makePrivate(u.id) : makePublic(u.id);
       });
@@ -1849,6 +1853,7 @@ async function loadData() {
 
       // ersätt upload knapp
       const updateButton = document.createElement("button");
+      updateButton.classList.add("btn", "btn-danger");
       updateButton.addEventListener("click", () => { editItem(u) });
       updateButton.innerHTML = "Ersätt";
       cell6.appendChild(updateButton);

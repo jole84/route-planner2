@@ -34,6 +34,14 @@ body {
   background-color: #e7e7e7;
 }
 
+#uploads td {
+  padding: 0.2em;
+  /* padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  padding-left: 0.2em;
+  padding-right: 0.2em; */
+}
+
 #uploads {
   border-collapse: collapse;
 }
@@ -189,6 +197,10 @@ kbd {
   padding: .1875rem .375rem;
 }
 
+code {
+  font-size: large;
+}
+
 .btn {
   border-radius: 5px;
   border-width: 0;
@@ -198,8 +210,10 @@ kbd {
   font-family: "roboto", sans-serif;
   font-size: 0.75rem;
   font-weight: 500;
-  padding: .75rem 1.5rem .75rem 1.5rem;
+  /* padding: .75rem 1.5rem .75rem 1.5rem; */
+  padding: .75rem 1rem .75rem 1rem;
   text-transform: uppercase;
+  white-space: nowrap;
   /* max-width: fit-content; */
 }
 
