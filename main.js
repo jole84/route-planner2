@@ -392,10 +392,6 @@ const routeLineLayer = new VectorLayer({
   routeLineLayer: true,
 });
 
-routeLineString.addEventListener("change", () => {
-  routeLineStringFeature.set("routeMode", sessionStorage.routeMode);
-})
-
 const routePointStyle = {
   startPoint: new Style({
     image: new Icon({
@@ -494,28 +490,131 @@ function routePointsLayerStyle(feature) {
   return styles;
 }
 
-routePointsLineString.addEventListener("change", function () {
-  const routePoints = routePointsLineString.getCoordinates();
-  localStorage.routePoints = JSON.stringify(routePoints);
-  const currentFeatures = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    currentFeatures[feature.getId()] = feature.get("straight");
+routePointsLayer.addEventListener("change", function () {
+  console.log("routePointsLayer change");
+  // needs fixing ID
+  routePointsLineString.setCoordinates([]);
+  routePointsLayer.getSource().forEachFeature(feature => {
+    routePointsLineString.appendCoordinate(feature.getGeometry().getCoordinates())
   });
-  routePointsLayer.getSource().clear();
-  for (var i = 0; i < routePoints.length; i++) {
-    const routePointMarker = new Feature({
-      geometry: new Point(routePoints[i]),
-      straight: currentFeatures[i] || false,
-      routePointMarker: true,
-      pointType: getPointType(i, routePoints.length),
-    });
-    routePointMarker.setId(i);
-    routePointsLayer.getSource().addFeature(routePointMarker);
-  };
+
+  // const routePoints = routePointsLineString.getCoordinates();
+  // const routePoints = routePointsLayer.getSource().getFeatures();
+  // console.log(JSON.stringify(routePoints));
+
+  const format = new GeoJSON();
+  const routePoints = format.writeFeatures(routePointsLayer.getSource().getFeatures());
+
+  localStorage.routePoints = routePoints;
 });
 
+
+
+// routePointsLayer.getSource().addEventListener("addfeature", function () {
+//   console.log("routePointsLayerSource added feature");
+// });
+
+// routePointsLayer.getSource().addEventListener("changefeature", function (event) {
+//   console.log("routePointsLayerSource changed feature", event.feature.getId());
+// });
+
+routePointsLayer.getSource().addEventListener("removefeature", function () {
+  console.log("routePointsLayerSource removed feature");
+
+  routePointsLayer.getSource().getFeatures().map((feature, index) => feature.setId(index));
+});
+
+
+routeLineString.addEventListener("change", (event) => {
+  // routePointsLineString.setCoordinates(routeLineString.getCoordinates()[0]);
+  console.log("routeLineString change", event);
+
+  routeLineStringFeature.set("routeMode", sessionStorage.routeMode);
+});
+
+// const modifyRouteLineString = new Modify({ source: routeLineLayer.getSource() });
+
+// modifyRouteLineString.addEventListener("modifystart", function () {
+//   console.log("modifystart");
+// });
+
+// modifyRouteLineString.addEventListener("modifyend", function () {
+//     console.log("modifyend");
+//   const routePointsLayerCoordinates = routePointsLayer.getSource().getFeatures().map(x => x.getGeometry().getCoordinates());
+//   console.log(routePointsLayerCoordinates);
+// });
+
+// routePointsLineString.addEventListener("change", function () {
+// console.log("routePointsLineString change")
+// const currentFeatures = [];
+// routePointsLayer.getSource().forEachFeature(function (feature) {
+//   currentFeatures[feature.getId()] = feature.get("straight");
+// });
+// routePointsLayer.getSource().clear();
+// for (var i = 0; i < routePoints.length; i++) {
+//   const routePointMarker = new Feature({
+//     geometry: new Point(routePoints[i]),
+//     straight: currentFeatures[i] || false,
+//     routePointMarker: true,
+//     pointType: getPointType(i, routePoints.length),
+//   });
+//   routePointMarker.setId(i);
+//   routePointsLayer.getSource().addFeature(routePointMarker);
+// };
+// });
+
+const modifyRoutePoints = new Modify({ source: routePointsLayer.getSource() });
+// modifyRoutePoints.addEventListener("modifyend", function () {
+//   console.log("modifyRoutePoints modifyend")
+//   const routePointsLineStringCoordinates = routePointsLineString.getCoordinates();
+
+//   routePointsLayer.getSource().clear();
+
+//   routePointsLineStringCoordinates.forEach(element => {
+//     const routePointMarker = new Feature({
+//       geometry: new Point(element),
+//       routePointMarker: true,
+
+//       // needs fixing
+//       pointType: getPointType(routePointsLayer.getSource().getFeatures().length, routePointsLayer.getSource().getFeatures().length + 1),
+//     });
+//     routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
+//     routePointsLayer.getSource().addFeature(routePointMarker);
+//   });
+//   routeMe();
+// });
+
 const modifyRoutePointsLineString = new Modify({ source: routePointsLineStringLayer.getSource() });
+
+modifyRoutePointsLineString.addEventListener("modifystart", function () {
+  // routePointsLineString.setCoordinates([]);
+  console.log("modifyRoutePointsLineString modifystart");
+});
+
 modifyRoutePointsLineString.addEventListener("modifyend", function () {
+  console.log("modifyRoutePointsLineString modifyend");
+  const routePointsLineStringCoordinates = routePointsLineString.getCoordinates();
+  // needs fixing
+  // console.log(routePointsLineStringCoordinates);
+
+  // array map?
+  // const routePointsLayerCoordinates = routePointsLayer.getSource().getFeatures().map(x => x.getGeometry().getCoordinates());
+  // routePointsLayerCoordinates.map(x => x.getGeometry().getCoordinates());
+  // console.log(routePointsLayerCoordinates);
+
+  routePointsLayer.getSource().clear();
+  routePointsLineStringCoordinates.forEach(element => {
+    const routePointMarker = new Feature({
+      geometry: new Point(element),
+      routePointMarker: true,
+
+      // needs fixing
+      pointType: getPointType(routePointsLayer.getSource().getFeatures().length, routePointsLayer.getSource().getFeatures().length + 1),
+    });
+    routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
+    routePointsLayer.getSource().addFeature(routePointMarker);
+  });
+
   routeMe();
 });
 
@@ -656,10 +755,20 @@ try {
   console.log(error);
 }
 
-JSON.parse(localStorage.routePoints || "[]").forEach(function (element) {
-  routePointsLineString.appendCoordinate(element);
-});
-routeMe();
+try {
+
+  const routePoints = new GeoJSON().readFeatures(localStorage.routePoints || {"type":"FeatureCollection","features":[]});
+  routePointsLayer.getSource().addFeatures(routePoints);
+} catch (error) {
+  // needs fixing
+  console.log(error);
+}
+
+try {
+  routeMe();
+} catch (error) {
+  console.log(error);
+}
 
 const multipleColors = [
   [0, 0, 255, 0.6], // blue standard
@@ -877,8 +986,9 @@ const map = new Map({
   keyboardEventTarget: document,
 });
 
-// map.addInteraction(modifyroutePoints);
 map.addInteraction(modifyRoutePointsLineString);
+// map.addInteraction(modifyRouteLineString);
+map.addInteraction(modifyRoutePoints);
 map.addInteraction(modifyPoiLayer);
 
 window.onbeforeunload = function () {
@@ -938,8 +1048,8 @@ function routeMe() {
       document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
       document.getElementById("totalTime").innerHTML = "";
     }
-    else if (routeMode == "ORS") routeMeORS();
     else if (routeMode == "OSRM") routeMeOSRM();
+    else if (routeMode == "ORS") routeMeORS();
     else if (routeMode == "GraphHopper") routeMeGraphHopper();
     else if (routeMode == "Geoapify") routeMeGeoapify();
     else if (routeMode == "google") routeMeGoogle();
@@ -1504,7 +1614,7 @@ function openContextPopup(coordinate) {
   let drawingToRemove;
   let gpxFeatureToRemove;
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
-    console.log(feature.getProperties());
+    console.log(feature);
     if (closestPoi) {
       document.getElementById("editPoiButton").innerHTML = 'Byt namn på POI "' + closestPoi.get("name") + '"';
       document.getElementById("removePoiButton").innerHTML = '✖ Ta bort POI "' + closestPoi.get("name") + '"';
@@ -1678,7 +1788,16 @@ document.getElementById("streetviewlink").addEventListener("click", function () 
 });
 
 document.getElementById("addRoutePosition").addEventListener("click", function () {
-  routePointsLineString.appendCoordinate(contextPopup.getPosition());
+  const routePointMarker = new Feature({
+    geometry: new Point(contextPopup.getPosition()),
+    routePointMarker: true,
+
+    // needs fixing
+    pointType: getPointType(routePointsLayer.getSource().getFeatures().length, routePointsLayer.getSource().getFeatures().length + 1),
+  });
+  routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
+  routePointsLayer.getSource().addFeature(routePointMarker);
+  // routePointsLineString.appendCoordinate(contextPopup.getPosition());
   contextPopup.setPosition();
   routeMe();
 });
@@ -1686,16 +1805,18 @@ document.getElementById("addRoutePosition").addEventListener("click", function (
 document.getElementById("removeRoutePosition").addEventListener("click", function () {
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
   const closestRoutePointId = closestRoutePoint.getId();
+  // needs fixing ID
+  console.log("remove ID ", closestRoutePointId);
   routePointsLayer.getSource().removeFeature(closestRoutePoint);
-  const newRoutePoints = [];
-  for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
-    if (i === closestRoutePointId) {
-      continue;
-    }
-    newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
-  };
-  routePointsLineString.setCoordinates(newRoutePoints);
-  routeMe();
+  // const newRoutePoints = [];
+  // for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
+  //   if (i === closestRoutePointId) {
+  //     continue;
+  //   }
+  //   newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
+  // };
+  // routePointsLineString.setCoordinates(newRoutePoints);
+  // routeMe();
   contextPopup.setPosition();
 });
 
