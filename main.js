@@ -652,7 +652,11 @@ poiLayer.addEventListener("change", function () {
   localStorage.poiString = geoJsonFile;
 });
 
-poiLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.poiString || { "type": "FeatureCollection", "features": [] }));
+try {
+  poiLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.poiString || { "type": "FeatureCollection", "features": [] }));
+} catch (error) {
+  console.log(error);
+}
 
 routePointsLayer.addEventListener("change", function () {
   const format = new GeoJSON();
@@ -660,9 +664,13 @@ routePointsLayer.addEventListener("change", function () {
   localStorage.routePoints = routePoints;
 });
 
-routePointsLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.routePoints || { "type": "FeatureCollection", "features": [] }));
-updateRoutePointsLineString();
-routeMe();
+try {
+  routePointsLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.routePoints || { "type": "FeatureCollection", "features": [] }));
+  updateRoutePointsLineString();
+  routeMe();
+} catch (error) {
+  console.log(error);
+}
 
 const multipleColors = [
   [0, 0, 255, 0.6], // blue standard
@@ -821,34 +829,37 @@ const drawLayer = new VectorLayer({
 
 const newDrawFeature = new Feature({
   geometry: new LineString([]),
+  "drawing": true,
 });
 newDrawFeature.setId(0);
 drawLayer.getSource().addFeature(newDrawFeature);
+
 drawLayer.getSource().addEventListener("change", function () {
-  const drawFeatures = [];
-  drawLayer.getSource().forEachFeature(function (feature) {
-    if (feature.getId() != 0) {
-      feature.set("drawing", true);
-      feature.set("name", featureLengthString(getLength(feature.getGeometry())))
-      drawFeatures.push(feature.getGeometry().getCoordinates());
-    }
-  });
-  localStorage.drawFeatures = JSON.stringify(drawFeatures);
+  const drawFeatures = drawLayer.getSource().getFeatures();
+  const geoJsonFile = new GeoJSON().writeFeatures(drawFeatures);
+  localStorage.drawFeatures = geoJsonFile;
 });
 
 newDrawFeature.addEventListener("change", function () {
   newDrawFeature.set("name", featureLengthString(getLength(newDrawFeature.getGeometry())));
 });
 
+try {
+  drawLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.drawFeatures || { "type": "FeatureCollection", "features": [] }));
+} catch (error) {
+  console.log(error);
+}
+
 function featureLengthString(featureLength) {
   return featureLength > 1000 ? (featureLength / 1000).toFixed(2) + "km" : Math.round(featureLength) + "m";
 }
 
-JSON.parse(localStorage.drawFeatures || "[]").forEach(function (element) {
-  if (element.length > 0) {
-    drawLayer.getSource().addFeature(new Feature({
-      geometry: new LineString(element)
-    }));
+document.addEventListener("mouseup", function () {
+  if (newDrawFeature.getGeometry().getCoordinates().length > 0) {
+    const newDrawFeatureCopy = newDrawFeature.clone();
+    newDrawFeatureCopy.setGeometry(newDrawFeatureCopy.getGeometry().simplify(20));
+    drawLayer.getSource().addFeature(newDrawFeatureCopy);
+    newDrawFeature.getGeometry().setCoordinates([]);
   }
 });
 
@@ -1620,15 +1631,6 @@ map.on("pointermove", function (evt) {
   }
 });
 
-document.addEventListener("mouseup", function () {
-  if (newDrawFeature.getGeometry().getCoordinates().length > 0) {
-    const newDrawFeatureCopy = newDrawFeature.clone();
-    newDrawFeatureCopy.setGeometry(newDrawFeatureCopy.getGeometry().simplify(20));
-    drawLayer.getSource().addFeature(newDrawFeatureCopy);
-    newDrawFeature.getGeometry().setCoordinates([]);
-  }
-});
-
 map.on("pointerdrag", function (evt) {
   if (evt.originalEvent.altKey) {
     newDrawFeature.getGeometry().appendCoordinate(evt.coordinate);
@@ -1653,10 +1655,8 @@ document.addEventListener("keydown", function (event) {
       if (event.key == "c") document.getElementById("contextPopupButton").click();
     }
     if (event.key == "Backspace") {
-      const newroutePointsLineString = routePointsLineString.getCoordinates();
-      newroutePointsLineString.pop()
-      routePointsLineString.setCoordinates(newroutePointsLineString);
-      routeMe();
+      const lastRoutePoint = routePointsLayer.getSource().getFeatureById(routePointsLayer.getSource().getFeatures().length - 1);
+      routePointsLayer.getSource().removeFeature(lastRoutePoint);
     }
   }
 });
