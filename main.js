@@ -392,46 +392,26 @@ const routeLineLayer = new VectorLayer({
   routeLineLayer: true,
 });
 
-const routePointStyle = {
-  startPoint: new Style({
-    image: new Icon({
-      anchor: [0.5, 1],
-      opacity: 0.85,
-      src: "https://jole84.se/images/start-marker.svg",
-    }),
-  }),
-  midPoint: new Style({
+function routePointStyle(feature) {
+  return new Style({
     image: new Icon({
       anchor: [0.5, 1],
       opacity: 0.85,
       src: "https://jole84.se/images/marker.svg",
     }),
-  }),
-  endPoint: new Style({
-    image: new Icon({
-      anchor: [0.5, 1],
-      opacity: 0.85,
-      src: "https://jole84.se/images/end-marker.svg",
+    text: new Text({
+      text: String(feature.getId() + 1),
+      font: "bold 12px sans-serif",
+      justify: "center",
+      textBaseline: "bottom",
+      offsetY: -20,
     }),
-  }),
-}
-
-function getPointType(i, y) {
-  if (i == 0) {
-    return "startPoint";
-  } else if (i == y - 1) {
-    return "endPoint";
-  } else {
-    return "midPoint";
-  }
+  });
 }
 
 const routePointsLayer = new VectorLayer({
   source: new VectorSource(),
-  style: function (feature) {
-    return routePointStyle[feature.get("pointType")];
-  },
-  // style: gpxStyle,
+  style: routePointStyle,
   routePointsLayer: true,
 });
 
@@ -497,10 +477,7 @@ function routePointsLayerStyle(feature) {
 
 routePointsLayer.getSource().addEventListener("removefeature", function () {
   for (let i = 0; i < routePointsLayer.getSource().getFeatures().length; i++) {
-    try {
-      console.log(routePointsLayer.getSource().getFeatureById(i).getId(), i);
-      // needs fixing
-    } catch {
+    if (!routePointsLayer.getSource().getFeatureById(i)) {
       routePointsLayer.getSource().getFeatureById(i + 1).setId(i);
     }
   }
@@ -508,8 +485,7 @@ routePointsLayer.getSource().addEventListener("removefeature", function () {
   updateRoutePointsLineString();
 });
 
-
-routeLineString.addEventListener("change", (event) => {
+routeLineString.addEventListener("change", () => {
   routeLineStringFeature.set("routeMode", sessionStorage.routeMode);
 });
 
@@ -539,7 +515,7 @@ modifyRoutePointsLineString.addEventListener("modifyend", function () {
   routePointsLayer.getSource().clear();
 
   routePointsLineStringCoordinates.forEach(element => {
-    addroutePointMarker(element);
+    addRoutePointMarker(element);
   });
   updateRoutePointsLineString();
 });
@@ -675,11 +651,8 @@ poiLayer.addEventListener("change", function () {
   const geoJsonFile = new GeoJSON().writeFeatures(poiFeatures);
   localStorage.poiString = geoJsonFile;
 });
-try {
-  poiLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.poiString));
-} catch (error) {
-  console.log(error);
-}
+
+poiLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.poiString || { "type": "FeatureCollection", "features": [] }));
 
 routePointsLayer.addEventListener("change", function () {
   const format = new GeoJSON();
@@ -687,19 +660,9 @@ routePointsLayer.addEventListener("change", function () {
   localStorage.routePoints = routePoints;
 });
 
-try {
-  const routePoints = new GeoJSON().readFeatures(localStorage.routePoints || { "type": "FeatureCollection", "features": [] });
-  routePointsLayer.getSource().addFeatures(routePoints);
-  updateRoutePointsLineString();
-} catch (error) {
-  console.log(error);
-}
-
-try {
-  routeMe();
-} catch (error) {
-  console.log(error);
-}
+routePointsLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.routePoints || { "type": "FeatureCollection", "features": [] }));
+updateRoutePointsLineString();
+routeMe();
 
 const multipleColors = [
   [0, 0, 255, 0.6], // blue standard
@@ -1615,7 +1578,7 @@ map.addEventListener("click", function (event) {
     if (hit) {
       routePointsLayer.getSource().removeFeature(closestRoutePoint);
     } else {
-      addroutePointMarker(event.coordinate);
+      addRoutePointMarker(event.coordinate);
       updateRoutePointsLineString();
     }
   }
@@ -1709,7 +1672,7 @@ document.getElementById("streetviewlink").addEventListener("click", function () 
 });
 
 document.getElementById("addRoutePosition").addEventListener("click", function () {
-  addroutePointMarker(contextPopup.getPosition());
+  addRoutePointMarker(contextPopup.getPosition());
   updateRoutePointsLineString();
   contextPopup.setPosition();
   routeMe();
@@ -1745,18 +1708,14 @@ function addPoi(poiPosition, name) {
   poiLayer.getSource().addFeature(poiMarker);
 }
 
-function addroutePointMarker(coordinate) {
-  const routePointsLineStringLength = routePointsLineString.getCoordinates().length;
-  console.log(routePointsLineStringLength, routePointsLayer.getSource().getFeatures().length);
+function addRoutePointMarker(coordinate) {
+  const routePointsLayerLength = routePointsLayer.getSource().getFeatures().length;
 
   const routePointMarker = new Feature({
     geometry: new Point(coordinate),
     routePointMarker: true,
-
-    // needs fixing
-    pointType: getPointType(routePointsLayer.getSource().getFeatures().length, routePointsLayer.getSource().getFeatures().length),
   });
-  routePointMarker.setId(routePointsLayer.getSource().getFeatures().length);
+  routePointMarker.setId(routePointsLayerLength);
   routePointsLayer.getSource().addFeature(routePointMarker);
 }
 
@@ -1767,7 +1726,7 @@ document.getElementById("removePoiButton").addEventListener("click", function ()
 });
 
 addPositionButton.addEventListener("click", function (event) {
-  addroutePointMarker(map.getView().getCenter());
+  addRoutePointMarker(map.getView().getCenter());
   updateRoutePointsLineString();
 });
 
