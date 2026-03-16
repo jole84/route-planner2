@@ -317,9 +317,14 @@ function clearMap() {
 };
 
 document.getElementById("reverseRoute").addEventListener("click", function () {
-  routePointsLineString.setCoordinates(routePointsLineString.getCoordinates().reverse());
-  contextPopup.setPosition();
-  routeMe();
+  const routePointsLineStringCoordinates = routePointsLineString.getCoordinates();
+  routePointsLineString.setCoordinates(routePointsLineStringCoordinates.reverse());
+
+  routePointsLayer.getSource().clear();
+  routePointsLineStringCoordinates.forEach(element => {
+    addRoutePointMarker(element);
+  });
+  updateRoutePointsLineString();
 });
 
 const newTileLayer = new VectorTileLayer({
