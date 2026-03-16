@@ -306,6 +306,7 @@ function clearMap() {
   voiceHintsLayer.getSource().clear();
   poiLayer.getSource().clear();
   gpxLayer.getSource().clear();
+  searchResultLayer.getSource().clear();
   drawLayer.getSource().clear();
   drawLayer.getSource().addFeature(newDrawFeature);
   localStorage.removeItem("poiString");
@@ -761,6 +762,42 @@ const gpxLayer = new VectorLayer({
   triggerPointer: true,
 });
 
+const searchResultLayer = new VectorLayer({
+  source: new VectorSource(),
+  style: (feature) => {
+    return new Style({
+      image: new Icon({
+        anchor: [0.5, 1],
+        src: "https://jole84.se/images/white-marker.svg",
+        color: "blue",
+        opacity: 0.6,
+        scale: 0.8,
+      }),
+      text: new Text({
+        text: String("Sökresultat:\n" + feature.get("name")),
+        font: "13px B612, sans-serif",
+        placement: "line",
+        textAlign: "left",
+        textBaseline: "bottom",
+        offsetX: 10,
+        fill: new Fill({
+          color: "#1222b4",
+        }),
+        backgroundFill: new Fill({
+          color: [255, 255, 255, 0.9],
+        }),
+        backgroundStroke: new Stroke({
+          color: [0, 0, 0, 0.9],
+          width: 1.5,
+        }),
+        padding: [0, 0, 0, 1],
+      }),
+    });
+  },
+  declutter: true,
+  triggerPointer: true,
+});
+
 let lineStringId = 0;
 // gpxLayer.getSource().addEventListener("change", function () {
 //   const poiString = [];
@@ -885,6 +922,7 @@ const map = new Map({
     osm,
     opentopomap,
     gpxLayer,
+    searchResultLayer,
     routeLineLayer,
     routePointsLineStringLayer,
     routePointsLayer,
@@ -1564,7 +1602,8 @@ function openContextPopup(coordinate) {
         gpxFeatureToRemove.set("poi", true);
         poiLayer.getSource().addFeature(gpxFeatureToRemove);
       }
-      gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
+      if (gpxLayer.getSource().hasFeature(gpxFeatureToRemove)) gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
+      if (searchResultLayer.getSource().hasFeature(gpxFeatureToRemove)) searchResultLayer.getSource().removeFeature(gpxFeatureToRemove);
       routeMe();
       contextPopup.setPosition();
     }
@@ -1608,7 +1647,6 @@ map.addEventListener("contextmenu", function (event) {
         // hide if visible
         contextPopup.setPosition();
       } else {
-        searchName = "";
         openContextPopup(event.coordinate);
       }
     }
@@ -1692,7 +1730,7 @@ document.getElementById("removeRoutePosition").addEventListener("click", functio
 document.getElementById("addPoiButton").addEventListener("click", function () {
   poiPosition = contextPopup.getPosition();
   contextPopup.setPosition();
-  const newName = prompt("Namn på POI:", searchName || toStringXY(toLonLat(poiPosition).reverse(), 5));
+  const newName = prompt("Namn på POI:", toStringXY(toLonLat(poiPosition).reverse(), 5));
   if (newName) addPoi(poiPosition, newName);
 });
 
@@ -1711,6 +1749,15 @@ function addPoi(poiPosition, name) {
     poi: true,
   });
   poiLayer.getSource().addFeature(poiMarker);
+}
+
+function addSearchResult(poiPosition, name) {
+  const poiMarker = new Feature({
+    geometry: new Point(poiPosition),
+    name: name,
+    gpxFeature: true,
+  });
+  searchResultLayer.getSource().addFeature(poiMarker);
 }
 
 function addRoutePointMarker(coordinate) {
@@ -2049,11 +2096,10 @@ function editItem(u) {
 }
 
 
-let searchName = "";
 document.getElementById("searchInput").addEventListener("change", () => {
   const searchString = document.getElementById("searchInput").value;
+  if (searchString.trim() == "") return searchResultLayer.getSource().clear();
 
-  if (searchString == "") return;
   const requestOptions = {
     method: "GET",
   };
@@ -2061,10 +2107,11 @@ document.getElementById("searchInput").addEventListener("change", () => {
   const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
 
   const params = new URLSearchParams({
-    text: searchString,
+    // text: searchString,
+    name: searchString,
     apiKey: apiKey,
     lang: "sv",
-    limit: 1,
+    limit: 50,
     filter: "countrycode:se",
     bias: "proximity:" + toLonLat(view.getCenter()).join(","),
   });
@@ -2074,20 +2121,20 @@ document.getElementById("searchInput").addEventListener("change", () => {
     return response.json();
   }).then(result => {
     console.log(result);
+    searchResultLayer.getSource().clear();
     try {
-      const foundFeature = result.features[0];
-      const resultCoordinate = fromLonLat(foundFeature.geometry.coordinates);
-      searchName = foundFeature.properties.name || foundFeature.properties.formatted;
-      openContextPopup(resultCoordinate);
-      // view.animate({
-      //   center: resultCoordinate,
-      //   zoom: 15,
-      // });
-      view.setCenter(resultCoordinate);
-      view.setZoom(15);
+      const foundFeatures = result.features;
+      let i = 1;
+      for (const foundFeature of foundFeatures) {
+        const resultCoordinate = fromLonLat(foundFeature.geometry.coordinates);
+        addSearchResult(resultCoordinate, foundFeature.properties.formatted || foundFeature.properties.name);
+      }
+      view.fit(searchResultLayer.getSource().getExtent(), {
+        maxZoom: 15,
+        padding: [100, 100, 100, 100],
+      });
     } catch (error) {
       console.log(error);
-      searchName = "";
     }
 
   });
