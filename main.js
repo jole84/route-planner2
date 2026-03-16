@@ -300,9 +300,9 @@ function clearMap() {
   document.getElementById("currentLoadedName").innerHTML = "";
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
+  routePointsLayer.getSource().clear();
   routePointsLineString.setCoordinates([]);
   routeLineString.setCoordinates([]);
-  routePointsLayer.getSource().clear();
   voiceHintsLayer.getSource().clear();
   poiLayer.getSource().clear();
   gpxLayer.getSource().clear();
@@ -498,6 +498,7 @@ routeLineString.addEventListener("change", () => {
 const modifyRoutePoints = new Modify({ source: routePointsLayer.getSource() });
 modifyRoutePoints.addEventListener("modifyend", function () {
   updateRoutePointsLineString();
+  routeMe();
 });
 
 function updateRoutePointsLineString() {
@@ -506,7 +507,6 @@ function updateRoutePointsLineString() {
     newroutePointsLineStringCoordinates[feature.getId()] = feature.getGeometry().getCoordinates();
   });
   routePointsLineString.setCoordinates(newroutePointsLineStringCoordinates);
-  routeMe();
 }
 
 const modifyRoutePointsLineString = new Modify({ source: routePointsLineStringLayer.getSource() });
@@ -524,6 +524,7 @@ modifyRoutePointsLineString.addEventListener("modifyend", function () {
     addRoutePointMarker(element);
   });
   updateRoutePointsLineString();
+  routeMe();
 });
 
 
@@ -1635,7 +1636,8 @@ map.addEventListener("click", function (event) {
     } else {
       addRoutePointMarker(event.coordinate);
       updateRoutePointsLineString();
-    }
+    } 
+    routeMe();
   }
 });
 
@@ -1725,6 +1727,7 @@ document.getElementById("removeRoutePosition").addEventListener("click", functio
   const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
   routePointsLayer.getSource().removeFeature(closestRoutePoint);
   contextPopup.setPosition();
+  routeMe();
 });
 
 document.getElementById("addPoiButton").addEventListener("click", function () {
@@ -1780,6 +1783,7 @@ document.getElementById("removePoiButton").addEventListener("click", function ()
 addPositionButton.addEventListener("click", function (event) {
   addRoutePointMarker(map.getView().getCenter());
   updateRoutePointsLineString();
+  routeMe();
 });
 
 contextPopupButton.addEventListener("click", function (event) {
@@ -1810,7 +1814,7 @@ removePositionButton.addEventListener("click", function (event) {
       newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
     };
     routePointsLineString.setCoordinates(newRoutePoints);
-    // routeMe();
+    routeMe();
   } catch {
     console.log("no points found!")
   }
@@ -2059,7 +2063,12 @@ async function loadItem(u) {
     } else if (!!element.get("drawing")) {
       drawLayer.getSource().addFeature(element);
     } else if (!!element.get("routePointsLineString")) {
-      routePointsLineString.setCoordinates(element.getGeometry().getCoordinates());
+      const routePointsLineStringCoordinates = element.getGeometry().getCoordinates();
+      
+      routePointsLineString.setCoordinates(routePointsLineStringCoordinates);
+      routePointsLineStringCoordinates.forEach(element => {
+        addRoutePointMarker(element);
+      });
     } else if (!!element.get("gpxFeature")) {
       gpxLayer.getSource().addFeature(element);
     }
