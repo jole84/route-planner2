@@ -1636,7 +1636,7 @@ map.addEventListener("click", function (event) {
     } else {
       addRoutePointMarker(event.coordinate);
       updateRoutePointsLineString();
-    } 
+    }
     routeMe();
   }
 });
@@ -2064,7 +2064,7 @@ async function loadItem(u) {
       drawLayer.getSource().addFeature(element);
     } else if (!!element.get("routePointsLineString")) {
       const routePointsLineStringCoordinates = element.getGeometry().getCoordinates();
-      
+
       routePointsLineString.setCoordinates(routePointsLineStringCoordinates);
       routePointsLineStringCoordinates.forEach(element => {
         addRoutePointMarker(element);
@@ -2104,47 +2104,59 @@ function editItem(u) {
     .then(() => loadData());
 }
 
-
-document.getElementById("searchInput").addEventListener("change", () => {
+document.getElementById("searchInput").addEventListener("change", async () => {
   const searchString = document.getElementById("searchInput").value;
-  if (searchString.trim() == "") return searchResultLayer.getSource().clear();
+  
+  // 1. Clear previous results immediately
+  searchResultLayer.getSource().clear();
+  if (!searchString.trim()) return;
 
-  const requestOptions = {
-    method: "GET",
-  };
+  const viewCenter = toLonLat(view.getCenter());
 
-  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
+  try {
+    const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location',
+      },
+      body: JSON.stringify({
+        textQuery: searchString,
+        locationBias: {
+          circle: {
+            center: { latitude: viewCenter[1], longitude: viewCenter[0] },
+            radius: 5000.0 // Increased to 5km; 500m is very small for text search
+          }
+        }
+      }),
+    });
 
-  const params = new URLSearchParams({
-    // text: searchString,
-    name: searchString,
-    apiKey: apiKey,
-    lang: "sv",
-    limit: 50,
-    filter: "countrycode:se",
-    bias: "proximity:" + toLonLat(view.getCenter()).join(","),
-  });
+    const result = await response.json();
 
-  fetch('https://api.geoapify.com/v1/geocode/search?' + params, requestOptions
-  ).then(response => {
-    return response.json();
-  }).then(result => {
-    console.log(result);
-    searchResultLayer.getSource().clear();
-    try {
-      const foundFeatures = result.features;
-      let i = 1;
-      for (const foundFeature of foundFeatures) {
-        const resultCoordinate = fromLonLat(foundFeature.geometry.coordinates);
-        addSearchResult(resultCoordinate, foundFeature.properties.formatted || foundFeature.properties.name);
-      }
-      view.fit(searchResultLayer.getSource().getExtent(), {
-        maxZoom: 15,
-        padding: [100, 100, 100, 100],
-      });
-    } catch (error) {
-      console.log(error);
+    // 2. Safety Check: If no places are found, the 'places' key won't exist
+    if (!result.places || result.places.length === 0) {
+      console.log("No results found");
+      return;
     }
 
-  });
-})
+    // 3. Process results
+    for (const place of result.places) {
+      const resultCoordinate = fromLonLat([place.location.longitude, place.location.latitude]);
+      addSearchResult(resultCoordinate, place.displayName.text + "\n" + place.formattedAddress);
+    }
+
+    // 4. Fit the map ONCE after all points are added
+    const extent = searchResultLayer.getSource().getExtent();
+    if (extent) {
+      view.fit(extent, {
+        maxZoom: 15,
+        padding: [100, 100, 100, 100],
+        duration: 500 // Adds a smooth transition
+      });
+    }
+
+  } catch (error) {
+    console.error("Places API Search failed:", error);
+  }
+});
