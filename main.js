@@ -151,6 +151,8 @@ function fileLoader(fileData) {
           feature.getGeometry().getCoordinates().forEach(function (coordinate) {
             routePointsLineString.appendCoordinate(coordinate);
           });
+        } else if (feature.get("routePointMarker")) {
+          addRoutePointMarker(feature.getGeometry().getCoordinates());
         } else if (feature.getGeometry().getType() === "Point") {
           addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
         } else {
@@ -276,7 +278,8 @@ document.getElementById("saveGeoJsonButton").onclick = () => {
   const collection = new Collection();
 
   collection.extend(poiLayer.getSource().getFeatures());
-  collection.extend(getNonEmptyFeatures(routePointsLineStringLayer));
+  // collection.extend(getNonEmptyFeatures(routePointsLineStringLayer));
+  collection.extend(routePointsLayer.getSource().getFeatures());
   collection.extend(getNonEmptyFeatures(drawLayer));
 
   const geoJsonFile = fileFormat.writeFeatures(collection.getArray(), {
@@ -1246,17 +1249,12 @@ function routeMeGeoapify() {
 }
 
 import Polyline from 'ol/format/Polyline.js';
-function routeMeGoogle() {
+async function routeMeGoogle() {
   const points = [];
   routePointsLayer.getSource().forEachFeature(function (feature) {
     const coords = toLonLat(feature.getGeometry().getCoordinates());
     points[feature.getId()] = { latitude: coords[1], longitude: coords[0] };
   });
-
-  // const points = routePointsLayer.getSource().getFeatures().map(feature => {
-  //   const coords = toLonLat(feature.getGeometry().getCoordinates());
-  //   return { latitude: coords[1], longitude: coords[0] };
-  // });
 
   if (points.length < 2) return console.error("Need at least 2 points");
 
@@ -1265,7 +1263,6 @@ function routeMeGoogle() {
   const intermediates = points.slice(1, -1).map(p => ({ location: { latLng: p } }));
 
   let FieldMask = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'
-  // if (enableVoiceHint) FieldMask += ',routes.legs'
   if (enableVoiceHint) FieldMask += ',routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.startLocation';
 
   const requestBody = {
@@ -1293,46 +1290,41 @@ function routeMeGoogle() {
     }),
   };
 
-  fetch('https://routes.googleapis.com/directions/v2:computeRoutes', requestBody
-  ).then(response => {
-    return response.json();
-  }).then(result => {
-    console.log(result);
+  const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', requestBody);
+  const result = await response.json();
 
-    const format = new Polyline();
-    const newGeometry = format.readFeature((result.routes[0].polyline.encodedPolyline), {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857"
-    });
+  console.log(result);
 
-    trackLength = result.routes[0].distanceMeters / 1000;
-    const totalTime = result.routes[0].duration.replace("s", "") * 1000;
-    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
-
-    voiceHintsLayer.getSource().clear();
-    if (enableVoiceHint) {
-      // let maneuverDistance = 0;
-      result.routes[0].legs.forEach(leg => {
-        leg.steps.forEach(step => {
-          console.log(step);
-
-          // const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
-          // maneuverDistance += step.distanceMeters / 1000;
-          const maneuverCoordinate = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
-
-          const instructionText = step.navigationInstruction.instructions;
-          const marker = new Feature({
-            name: instructionText,
-            geometry: new Point(maneuverCoordinate),
-          });
-          voiceHintsLayer.getSource().addFeature(marker);
-        });
-      });
-    }
+  const format = new Polyline();
+  const newGeometry = format.readFeature((result.routes[0].polyline.encodedPolyline), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857"
   });
+
+  trackLength = result.routes[0].distanceMeters / 1000;
+  const totalTime = result.routes[0].duration.replace("s", "") * 1000;
+  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+  routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+
+  voiceHintsLayer.getSource().clear();
+  if (enableVoiceHint) {
+    result.routes[0].legs.forEach(leg => {
+      leg.steps.forEach(step => {
+        console.log(step);
+
+        const maneuverCoordinate = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
+
+        const instructionText = step.navigationInstruction.instructions;
+        const marker = new Feature({
+          name: instructionText,
+          geometry: new Point(maneuverCoordinate),
+        });
+        voiceHintsLayer.getSource().addFeature(marker);
+      });
+    });
+  }
 }
 
 function routeMeValhalla() {
@@ -2106,7 +2098,7 @@ function editItem(u) {
 
 document.getElementById("searchInput").addEventListener("change", async () => {
   const searchString = document.getElementById("searchInput").value;
-  
+
   // 1. Clear previous results immediately
   searchResultLayer.getSource().clear();
   if (!searchString.trim()) return;
