@@ -1685,7 +1685,7 @@ document.addEventListener("keydown", function (event) {
   //   console.log("drawLayer", drawLayer.getSource().getFeatures().length);
   // }
 
-  if (!menuDivcontent.checkVisibility()) {
+  if (!menuDivcontent.checkVisibility() && document.activeElement.id != "searchInput") {
     if (enableTouchControls) {
       if (event.key == "a") document.getElementById("addPositionButton").click();
       if (event.key == "s") document.getElementById("removePositionButton").click();
@@ -1694,6 +1694,7 @@ document.addEventListener("keydown", function (event) {
     if (event.key == "Backspace") {
       const lastRoutePoint = routePointsLayer.getSource().getFeatureById(routePointsLayer.getSource().getFeatures().length - 1);
       routePointsLayer.getSource().removeFeature(lastRoutePoint);
+      routeMe();
     }
   }
 });
