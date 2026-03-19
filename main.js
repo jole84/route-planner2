@@ -12,6 +12,7 @@ import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
 import TileWMS from "ol/source/TileWMS.js";
+import Polyline from 'ol/format/Polyline.js';
 import { getLength } from 'ol/sphere';
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
@@ -34,6 +35,7 @@ let trackLength = 0;
 let poiPosition;
 let enableClickToAdd = document.getElementById("enableClickToAdd").checked;
 let enableVoiceHint = false;
+let shortestRoute = true;
 let avoidHigways = false;
 let qrCodeLink = new QRCode("qrRoutePlanner", {
   text: "https://jole84.se/nav-app/index.html",
@@ -71,6 +73,10 @@ document.getElementById("enableClickToAdd").addEventListener("change", function 
 
 document.getElementById("enableVoiceHint").addEventListener("change", function () {
   enableVoiceHint = document.getElementById("enableVoiceHint").checked;
+  routeMe();
+});
+document.getElementById("shortestRoute").addEventListener("change", function () {
+  shortestRoute = document.getElementById("shortestRoute").checked;
   routeMe();
 });
 document.getElementById("avoidHigways").addEventListener("change", function () {
@@ -1084,7 +1090,7 @@ function routeMeORS() {
       maneuvers: true,
 
       // preference: "fastest",
-      // preference: "shortest",
+      preference: shortestRoute ? "shortest" : "recommended",
 
       // maximum_speed: 85,
       // skip_segments: [1],
@@ -1219,6 +1225,7 @@ function routeMeGeoapify() {
     // type: "balanced",
     // type: "short",
     // type: "less_maneuvers",
+    type: shortestRoute ? "short" : "balanced",
   });
 
   if (avoidHigways) params.append("avoid", "highways");
@@ -1248,7 +1255,6 @@ function routeMeGeoapify() {
 
 }
 
-import Polyline from 'ol/format/Polyline.js';
 async function routeMeGoogle() {
   const points = [];
   routePointsLayer.getSource().forEachFeature(function (feature) {
@@ -1278,6 +1284,8 @@ async function routeMeGoogle() {
       destination,
       intermediates,
       travelMode: 'DRIVE',
+      // travelMode: 'TWO_WHEELER',
+      // requestedReferenceRoutes: shortestRoute ? ["SHORTER_DISTANCE"] : [], // "FUEL_EFFICIENT"
       // routingPreference: 'TRAFFIC_AWARE',
       routingPreference: 'TRAFFIC_UNAWARE',
       units: 'METRIC',
@@ -1365,7 +1373,7 @@ function routeMeValhalla() {
         "service_penalty": 15,
         "service_factor": 1,
         "exclude_unpaved": false,
-        "shortest": false,
+        "shortest": shortestRoute,
         "exclude_cash_only_tolls": false,
         "top_speed": 95,
         "fixed_speed": 0,
@@ -1404,7 +1412,7 @@ function routeMeValhalla() {
         "closure_factor": 9,
         "service_penalty": 15,
         "service_factor": 1,
-        "shortest": false,
+        "shortest": shortestRoute,
         "exclude_cash_only_tolls": false,
         "top_speed": 140,
         "fixed_speed": 0,
@@ -1448,7 +1456,7 @@ function routeMeValhalla() {
         "service_penalty": 15,
         "service_factor": 1,
         "exclude_unpaved": false,
-        "shortest": false,
+        "shortest": shortestRoute,
         "exclude_cash_only_tolls": false,
         "top_speed": 90,
         "axle_count": 5,
@@ -1611,6 +1619,12 @@ function openContextPopup(coordinate) {
 }
 
 map.addEventListener("click", function (event) {
+  if (localStorage.testing) {
+    // use for testing
+    console.log(localStorage.testing);
+  }
+
+
   if (contextPopup.getPosition()) return contextPopup.setPosition(); // remove contextPopup if visible
 
   if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls && enableClickToAdd) {
