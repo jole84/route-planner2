@@ -55,8 +55,8 @@ const destinationCoordinates = {
   remove(index) {
     if (index >= 0 && index < this.coordinates.length) {
       this.coordinates.splice(index, 1);
+      this.changed();
     }
-    this.changed();
   },
 
   clear() {
@@ -117,7 +117,7 @@ let poiPosition;
 let enableClickToAdd = document.getElementById("enableClickToAdd").checked;
 let enableVoiceHint = false;
 let shortestRoute = true;
-let avoidHigways = false;
+let avoidHighways = false;
 let qrCodeLink = new QRCode("qrRoutePlanner", {
   text: "https://jole84.se/nav-app/index.html",
   correctLevel: QRCode.CorrectLevel.M,
@@ -138,7 +138,7 @@ localStorage.mapMode = localStorage.mapMode || 0; // default map
 document.getElementById("openInfoButton").addEventListener("click", () => {
   menuDivcontent.replaceChildren(menuItems);
   document.getElementById("enableVoiceHint").checked = enableVoiceHint;
-  document.getElementById("avoidHigways").checked = avoidHigways;
+  document.getElementById("avoidHighways").checked = avoidHighways;
 });
 let enableTouchControls = document.getElementById("enableTouchControls").checked;
 document.getElementById("enableTouchControls").addEventListener("change", function () {
@@ -160,8 +160,8 @@ document.getElementById("shortestRoute").addEventListener("change", function () 
   shortestRoute = document.getElementById("shortestRoute").checked;
   routeMe();
 });
-document.getElementById("avoidHigways").addEventListener("change", function () {
-  avoidHigways = document.getElementById("avoidHigways").checked;
+document.getElementById("avoidHighways").addEventListener("change", function () {
+  avoidHighways = document.getElementById("avoidHighways").checked;
   routeMe();
 });
 document.getElementById("menuDivCloseButton").addEventListener("click", () => {
@@ -974,9 +974,8 @@ document.getElementById("layerSelector").addEventListener("change", function () 
 switchMap();
 
 function routeMe() {
-  const numberOfRoutePoints = destinationCoordinates.getLength();
   voiceHintsLayer.getSource().clear();
-  if (numberOfRoutePoints >= 2) {
+  if (destinationCoordinates.getLength() >= 2) {
     const routeMode = sessionStorage.routeMode;
     console.log("Starting routeMe, routeMode: " + routeMode);
     if (routeMode == "direkt") {
@@ -996,7 +995,7 @@ function routeMe() {
   }
 }
 
-function routeMeOSRM() {
+async function routeMeOSRM() {
   const params = new URLSearchParams({
     // exclude: ["motorway"],
     // annotations: true,
@@ -1008,35 +1007,35 @@ function routeMeOSRM() {
     skip_waypoints: true,
     steps: enableVoiceHint // || true,
   });
-  fetch(`https://router.project-osrm.org/route/v1/driving/${destinationCoordinates.listLonLat().join(";")}?` + params).then(response => {
-    return response.json();
-  }).then(result => {
-    console.log(result)
-    const format = new GeoJSON();
-    const newGeometry = format.readFeature(result.routes[0].geometry, {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857"
-    });
 
-    trackLength = result.routes[0].distance / 1000; // track-length in km
-    const totalTime = result.routes[0].duration * 1000; // track-time in milliseconds
-    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${destinationCoordinates.listLonLat().join(";")}?` + params);
+  const result = await response.json();
 
-    const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
-    newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
-    routeLineString.setCoordinates([newGeometryCoordinates]);
+  console.log(result);
+  const format = new GeoJSON();
+  const newGeometry = format.readFeature(result.routes[0].geometry, {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857"
+  });
 
-    const legs = result.routes[0].legs;
-    for (const leg of legs) {
-      for (const step of leg.steps) {
-        createTurnHint(step);
-      }
+  trackLength = result.routes[0].distance / 1000; // track-length in km
+  const totalTime = result.routes[0].duration * 1000; // track-time in milliseconds
+  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+  const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
+  newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
+  routeLineString.setCoordinates([newGeometryCoordinates]);
+
+  const legs = result.routes[0].legs;
+  for (const leg of legs) {
+    for (const step of leg.steps) {
+      createTurnHint(step);
     }
-  })
+  }
 }
 
-function routeMeORS() {
+async function routeMeORS() {
   const requestBody = {
     method: "post",
     headers: {
@@ -1055,7 +1054,7 @@ function routeMeORS() {
       // skip_segments: [1],
 
       options: {
-        avoid_features: avoidHigways ? ["highways"] : [],
+        avoid_features: avoidHighways ? ["highways"] : [],
         // round_trip: {
         //   length: 100000,
         //   points: 2,
@@ -1065,31 +1064,29 @@ function routeMeORS() {
     })
   };
 
-  fetch(`https://api.openrouteservice.org/v2/directions/driving-car/geojson?`, requestBody
-  ).then(response => {
-    console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
-    return response.json();
-  }).then(result => {
-    console.log(result);
-    // destinationCoordinates[destinationCoordinates.length - 1] = result.features[0].geometry.coordinates[result.features[0].geometry.coordinates.length - 1];
-    const format = new GeoJSON();
-    const newGeometry = format.readFeature(result.features[0].geometry, {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857"
-    });
+  const response = await fetch(`https://api.openrouteservice.org/v2/directions/driving-car/geojson?`, requestBody);
+  console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
+  const result = await response.json();
 
-    trackLength = result.features[0].properties.summary.distance / 1000; // track-length in km
-    const totalTime = result.features[0].properties.summary.duration * 1000;
-    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-    const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
-    newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
-    routeLineString.setCoordinates([newGeometryCoordinates]);
+  console.log(result);
+  // destinationCoordinates[destinationCoordinates.length - 1] = result.features[0].geometry.coordinates[result.features[0].geometry.coordinates.length - 1];
+  const format = new GeoJSON();
+  const newGeometry = format.readFeature(result.features[0].geometry, {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857"
   });
+
+  trackLength = result.features[0].properties.summary.distance / 1000; // track-length in km
+  const totalTime = result.features[0].properties.summary.duration * 1000;
+  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+  const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
+  newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
+  routeLineString.setCoordinates([newGeometryCoordinates]);
 }
 
-function routeMeGraphHopper() {
+async function routeMeGraphHopper() {
   const body = {
     profile: "car",
     points: destinationCoordinates.listLonLat(),
@@ -1121,37 +1118,37 @@ function routeMeGraphHopper() {
     // }
   }
 
-  fetch('https://graphhopper.com/api/1/route?key=89fef6e4-250b-400c-8e85-1ab9107f84a8', {
+  const response = await fetch('https://graphhopper.com/api/1/route?key=89fef6e4-250b-400c-8e85-1ab9107f84a8', {
     method: "POST",
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
     },
     body: JSON.stringify(body),
-  }).then(response => {
-    // response.headers.forEach((val, key) => {
-    //   console.log(key, val);
-    // });
-    console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
-    return response.json();
-  }).then(result => {
-    console.log(result);
-    const format = new GeoJSON();
-    const newGeometry = format.readFeature((result.paths[0].points), {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857"
-    });
-
-    trackLength = result.paths[0].distance / 1000;
-    const totalTime = result.paths[0].time;
-    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
   });
 
+  console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
+  const result = await response.json();
+
+  // response.headers.forEach((val, key) => {
+  //   console.log(key, val);
+  // });
+
+  console.log(result);
+  const format = new GeoJSON();
+  const newGeometry = format.readFeature((result.paths[0].points), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857"
+  });
+
+  trackLength = result.paths[0].distance / 1000;
+  const totalTime = result.paths[0].time;
+  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+  routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
 }
 
-function routeMeGeoapify() {
+async function routeMeGeoapify() {
   const requestOptions = {
     method: "GET",
     redirect: "follow"
@@ -1177,31 +1174,24 @@ function routeMeGeoapify() {
     type: shortestRoute ? "short" : "balanced",
   });
 
-  if (avoidHigways) params.append("avoid", "highways");
+  if (avoidHighways) params.append("avoid", "highways");
 
-  fetch('https://api.geoapify.com/v1/routing?' + params, requestOptions
-  ).then(response => {
-    // response.headers.forEach((val, key) => {
-    //   console.log(key, val);
-    // });
-    // console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
-    return response.json();
-  }).then(result => {
-    console.log(result);
-    const format = new GeoJSON();
-    const newGeometry = format.readFeature((result.features[0].geometry), {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857"
-    });
+  const response = await fetch('https://api.geoapify.com/v1/routing?' + params, requestOptions);
+  const result = await response.json();
 
-    trackLength = result.features[0].properties.distance / 1000;
-    const totalTime = result.features[0].properties.time * 1000;
-    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-    routeLineString.setCoordinates([newGeometry.getGeometry().getLineString().getCoordinates()]);
+  console.log(result);
+  const format = new GeoJSON();
+  const newGeometry = format.readFeature((result.features[0].geometry), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857"
   });
 
+  trackLength = result.features[0].properties.distance / 1000;
+  const totalTime = result.features[0].properties.time * 1000;
+  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+  routeLineString.setCoordinates([newGeometry.getGeometry().getLineString().getCoordinates()]);
 }
 
 async function routeMeGoogle() {
@@ -1238,7 +1228,7 @@ async function routeMeGoogle() {
       routeModifiers: {
         // avoidTolls: true,
         // avoidFerries: true,
-        avoidHighways: avoidHigways,
+        avoidHighways: avoidHighways,
       },
     }),
   };
@@ -1280,7 +1270,7 @@ async function routeMeGoogle() {
   }
 }
 
-function routeMeValhalla() {
+async function routeMeValhalla() {
   const points = destinationCoordinates.listLonLat().map(coordinate => ({ lat: coordinate[1], lon: coordinate[0], type: "break" }))
 
   points.slice(1, -1).map(element => element["type"] = "via"); // "through", "via", "break_through"
@@ -1299,7 +1289,7 @@ function routeMeValhalla() {
         "country_crossing_cost": 600,
         "width": 1.6,
         "height": 1.9,
-        "use_highways": avoidHigways ? 0 : 1,
+        "use_highways": avoidHighways ? 0 : 1,
         "use_tolls": 1,
         "use_ferry": 1,
         "ferry_cost": 300,
@@ -1339,7 +1329,7 @@ function routeMeValhalla() {
         "country_crossing_cost": 600,
         "width": 1.6,
         "height": 1.9,
-        "use_highways": avoidHigways ? 0 : 1,
+        "use_highways": avoidHighways ? 0 : 1,
         "use_tolls": 1,
         "use_ferry": 1,
         "ferry_cost": 300,
@@ -1383,7 +1373,7 @@ function routeMeValhalla() {
         "weight": 21.77,
         "axle_load": 9,
         "hazmat": false,
-        "use_highways": avoidHigways ? 0 : 1,
+        "use_highways": avoidHighways ? 0 : 1,
         "use_tolls": 1,
         "use_ferry": 1,
         "ferry_cost": 300,
@@ -1424,46 +1414,44 @@ function routeMeValhalla() {
     "language": "sv-SE"
   }
 
-  fetch('https://valhalla1.openstreetmap.de/route?json=' + JSON.stringify(params)
-  ).then(response => {
-    return response.json();
-  }).then(result => {
-    console.log(result)
+  const response = await fetch('https://valhalla1.openstreetmap.de/route?json=' + JSON.stringify(params));
+  const result = await response.json();
 
-    const format = new Polyline({
-      factor: "1e6",
-      geometryLayout: "XY"
-    });
-    const newGeometry = format.readFeature((result.trip.legs[0].shape), {
-      dataProjection: "EPSG:4326",
-      featureProjection: "EPSG:3857"
-    });
+  console.log(result);
 
-    trackLength = result.trip.summary.length;
-    const totalTime = result.trip.summary.time * 1000;
-    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
-
-
-    voiceHintsLayer.getSource().clear();
-    if (enableVoiceHint) {
-      let maneuverDistance = 0;
-      result.trip.legs.forEach(leg => {
-        const maneuvers = leg.maneuvers;
-        maneuvers.forEach(maneuver => {
-          const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
-          maneuverDistance += maneuver.length;
-          const marker = new Feature({
-            name: maneuver.instruction,
-            geometry: new Point(maneuverCoordinate),
-          });
-          voiceHintsLayer.getSource().addFeature(marker);
-        })
-      });
-    }
+  const format = new Polyline({
+    factor: "1e6",
+    geometryLayout: "XY"
   });
+  const newGeometry = format.readFeature((result.trip.legs[0].shape), {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857"
+  });
+
+  trackLength = result.trip.summary.length;
+  const totalTime = result.trip.summary.time * 1000;
+  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+  routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+
+
+  voiceHintsLayer.getSource().clear();
+  if (enableVoiceHint) {
+    let maneuverDistance = 0;
+    result.trip.legs.forEach(leg => {
+      const maneuvers = leg.maneuvers;
+      maneuvers.forEach(maneuver => {
+        const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
+        maneuverDistance += maneuver.length;
+        const marker = new Feature({
+          name: maneuver.instruction,
+          geometry: new Point(maneuverCoordinate),
+        });
+        voiceHintsLayer.getSource().addFeature(marker);
+      })
+    });
+  }
 }
 
 // add context menu popup
@@ -1810,7 +1798,7 @@ async function loadData() {
       updateButton.addEventListener("click", () => { editItem(u) });
       updateButton.innerHTML = "Ersätt";
       cell4.appendChild(updateButton);
-      
+
       // växla privat knapp
       const makePublicButton = document.createElement("button");
       makePublicButton.classList.add("btn", is_public ? "btn-success" : "btn-warning");
@@ -1819,7 +1807,7 @@ async function loadData() {
       });
       makePublicButton.innerHTML = is_public ? "Gör privat" : "Gör publik";
       cell5.appendChild(makePublicButton);
-      
+
       // ta bort knapp
       const removeButton = document.createElement("button");
       removeButton.classList.add("btn", "btn-danger");
