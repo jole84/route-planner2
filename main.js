@@ -7,7 +7,7 @@ import { toStringXY } from "ol/coordinate";
 import { Vector as VectorLayer } from "ol/layer.js";
 import { GPX, GeoJSON, KML } from 'ol/format.js';
 import Collection from 'ol/Collection.js';
-import { Point, MultiLineString, LineString } from 'ol/geom';
+import { Point, MultiLineString, LineString, MultiPoint } from 'ol/geom';
 import OSM from "ol/source/OSM.js";
 import Overlay from "ol/Overlay.js";
 import TileLayer from "ol/layer/Tile";
@@ -26,10 +26,91 @@ const removePositionButton = document.getElementById("removePositionButton");
 const contextPopupButton = document.getElementById("contextPopupButton");
 const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
-// const helpDiv = document.getElementById("helpDiv");
 const exportLinks = document.getElementById("exportLinks");
 const routeStorageMenu = document.getElementById("routeStorageMenu");
-// const poiFileName = document.getElementById("poiFileName");
+
+const destinationCoordinates = {
+  coordinates: JSON.parse(localStorage.destinationCoordinates || "[]"),
+
+  changed() {
+    localStorage.destinationCoordinates = JSON.stringify(this.coordinates);
+    routePointsLayer.getSource().clear();
+    this.coordinates.forEach((coordinate) => {
+      addRoutePointMarker(coordinate);
+    });
+    routePointsLineString.setCoordinates(this.coordinates);
+    routeMe();
+  },
+
+  push(coordinate) {
+    this.coordinates.push(coordinate);
+    this.changed();
+  },
+
+  pop() {
+    this.coordinates.pop();
+    this.changed();
+  },
+
+  remove(index) {
+    if (index >= 0 && index < this.coordinates.length) {
+      this.coordinates.splice(index, 1);
+    }
+    this.changed();
+  },
+
+  clear() {
+    this.coordinates = [];
+    this.changed();
+  },
+
+  removeCoordinate(coordinate) {
+    const coordinatesList = this.coordinates.map(coordinate => String(coordinate));
+    const index = coordinatesList.indexOf(String(coordinate));
+    this.coordinates.splice(index, 1);
+    this.changed();
+  },
+
+  getIndexOf(coordinate) {
+    const coordinatesList = this.coordinates.map(coordinate => String(coordinate));
+    return coordinatesList.indexOf(String(coordinate));
+  },
+
+  getClosestPointToCoordinate(coordinate) {
+    const newMultiPoint = new MultiPoint(this.coordinates);
+    const closestPoint = newMultiPoint.getClosestPoint(coordinate);
+    return closestPoint;
+  },
+
+  list() {
+    return this.coordinates;
+  },
+
+  listLonLat() {
+    return this.coordinates.map(coordinate => toLonLat(coordinate));
+  },
+
+  getCoordinate(index) {
+    return this.coordinates[index];
+  },
+
+  getLength() {
+    return this.coordinates.length;
+  },
+
+  update(index, coordinate) {
+    this.coordinates[index] = coordinate;
+    this.changed();
+  },
+
+  getFirstCoordinate() {
+    return this.coordinates[0];
+  },
+
+  getLastCoordinate() {
+    return this.coordinates[this.coordinates.length - 1];
+  },
+}
 
 let trackLength = 0;
 let poiPosition;
@@ -151,14 +232,16 @@ function fileLoader(fileData) {
       if (feature.get("styleUrl")) feature.unset("styleUrl"); // we do not need the styleUrl
       console.log(feature.getProperties());
       if (loadAsProject) {
+        if (feature.get("routeMode")) sessionStorage.routeMode = document.getElementById("routeModeSelector").value = feature.get("routeMode");
         if (feature.get("drawing")) {
           drawLayer.getSource().addFeature(feature);
         } else if (feature.get("routePointsLineString")) {
-          feature.getGeometry().getCoordinates().forEach(function (coordinate) {
-            routePointsLineString.appendCoordinate(coordinate);
-          });
+          destinationCoordinates.coordinates = feature.getGeometry().getCoordinates();
+          destinationCoordinates.changed();
         } else if (feature.get("routePointMarker")) {
-          addRoutePointMarker(feature.getGeometry().getCoordinates());
+          console.log(feature, "routePointMarker");
+          // needs fixing
+          // addRoutePointMarker(feature.getGeometry().getCoordinates());
         } else if (feature.getGeometry().getType() === "Point") {
           addPoi(feature.getGeometry().getCoordinates(), feature.get("name"));
         } else {
@@ -169,7 +252,6 @@ function fileLoader(fileData) {
             feature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach((coordinate) => routePointsLineString.appendCoordinate(coordinate));
           }
         }
-        routeMe();
       } else {
         if (feature.getGeometry().getType() == "LineString" || feature.getGeometry().getType() == "MultiLineString") {
           feature.setId(lineStringId++);
@@ -194,15 +276,11 @@ document.getElementById("exportRouteButton").onclick = function () {
   menuDivcontent.replaceChildren(exportLinks);
   let linkCode = "https://jole84.se/nav-app/index.html";
   const url = new URL(linkCode);
-  const routePoints = [];
   const poiPoints = [];
 
   // Route waypoints
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    routePoints[feature.getId()] = toCoordinateString(feature.getGeometry().getCoordinates());
-  });
-  if (routePoints.length > 0) {
-    url.searchParams.append("destinationPoints64", btoa(JSON.stringify(routePoints)));
+  if (destinationCoordinates.getLength() > 0) {
+    url.searchParams.append("destinationPoints64", btoa(JSON.stringify(destinationCoordinates.listLonLat())));
   }
 
   // POI
@@ -309,9 +387,7 @@ function clearMap() {
   document.getElementById("currentLoadedName").innerHTML = "";
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
-  routePointsLayer.getSource().clear();
-  routePointsLineString.setCoordinates([]);
-  routeLineString.setCoordinates([]);
+  destinationCoordinates.clear();
   voiceHintsLayer.getSource().clear();
   poiLayer.getSource().clear();
   gpxLayer.getSource().clear();
@@ -319,7 +395,6 @@ function clearMap() {
   drawLayer.getSource().clear();
   drawLayer.getSource().addFeature(newDrawFeature);
   localStorage.removeItem("poiString");
-  localStorage.removeItem("routePoints");
   localStorage.removeItem("gpxLayer");
   localStorage.removeItem("drawFeatures");
   lineStringId = 0;
@@ -327,21 +402,14 @@ function clearMap() {
 };
 
 document.getElementById("reverseRoute").addEventListener("click", function () {
-  const routePointsLineStringCoordinates = routePointsLineString.getCoordinates();
-  routePointsLineString.setCoordinates(routePointsLineStringCoordinates.reverse());
-
-  routePointsLayer.getSource().clear();
-  routePointsLineStringCoordinates.forEach(element => {
-    addRoutePointMarker(element);
-  });
-  updateRoutePointsLineString();
+  destinationCoordinates.coordinates = destinationCoordinates.coordinates.reverse();
+  destinationCoordinates.changed();
 });
 
 const newTileLayer = new VectorTileLayer({
   source: new VectorTileSource({
     format: new MVT(),
-    // url: './tiles/{z}/{x}/{y}.pbf',
-    // url: "https://jole84.se/phpReadFile.php?url=" +  'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
+    // url: localStorage.testing ? "https://jole84.se/phpReadFile.php?url=https://jole84.se/tiles/{z}/{x}/{y}.pbf" : 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
     url: 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
     minZoom: 6,
     maxZoom: 14,
@@ -485,57 +553,20 @@ function routePointsLayerStyle(feature) {
 
   return styles;
 }
-
-// routePointsLayer.getSource().addEventListener("addfeature", function () {
-//   updateRoutePointsLineString();
-// });
-
-routePointsLayer.getSource().addEventListener("removefeature", function () {
-  for (let i = 0; i < routePointsLayer.getSource().getFeatures().length; i++) {
-    if (!routePointsLayer.getSource().getFeatureById(i)) {
-      routePointsLayer.getSource().getFeatureById(i + 1).setId(i);
-    }
-  }
-
-  updateRoutePointsLineString();
-});
-
-routeLineString.addEventListener("change", () => {
-  routeLineStringFeature.set("routeMode", sessionStorage.routeMode);
-});
-
 const modifyRoutePoints = new Modify({ source: routePointsLayer.getSource() });
-modifyRoutePoints.addEventListener("modifyend", function () {
-  updateRoutePointsLineString();
-  routeMe();
+modifyRoutePoints.addEventListener("modifyend", function (event) {
+  destinationCoordinates.update(
+    event.features.getArray()[0].getId(),
+    event.features.getArray()[0].getGeometry().getCoordinates()
+  );
 });
-
-function updateRoutePointsLineString() {
-  const newroutePointsLineStringCoordinates = [];
-  routePointsLayer.getSource().forEachFeature((feature) => {
-    newroutePointsLineStringCoordinates[feature.getId()] = feature.getGeometry().getCoordinates();
-  });
-  routePointsLineString.setCoordinates(newroutePointsLineStringCoordinates);
-}
 
 const modifyRoutePointsLineString = new Modify({ source: routePointsLineStringLayer.getSource() });
-
-// modifyRoutePointsLineString.addEventListener("modifystart", function () {
-//   // routePointsLineString.setCoordinates([]);
-//   console.log("modifyRoutePointsLineString modifystart");
-// });
-
-modifyRoutePointsLineString.addEventListener("modifyend", function () {
+modifyRoutePointsLineString.addEventListener("modifyend", function (event) {
   const routePointsLineStringCoordinates = routePointsLineString.getCoordinates();
-  routePointsLayer.getSource().clear();
-
-  routePointsLineStringCoordinates.forEach(element => {
-    addRoutePointMarker(element);
-  });
-  updateRoutePointsLineString();
-  routeMe();
+  destinationCoordinates.coordinates = routePointsLineStringCoordinates;
+  destinationCoordinates.changed();
 });
-
 
 const voiceHintsLayer = new VectorLayer({
   source: new VectorSource(),
@@ -674,19 +705,7 @@ try {
   console.log(error);
 }
 
-routePointsLayer.addEventListener("change", function () {
-  const format = new GeoJSON();
-  const routePoints = format.writeFeatures(routePointsLayer.getSource().getFeatures());
-  localStorage.routePoints = routePoints;
-});
-
-try {
-  routePointsLayer.getSource().addFeatures(new GeoJSON().readFeatures(localStorage.routePoints || { "type": "FeatureCollection", "features": [] }));
-  updateRoutePointsLineString();
-  routeMe();
-} catch (error) {
-  console.log(error);
-}
+destinationCoordinates.changed();
 
 const multipleColors = [
   [0, 0, 255, 0.6], // blue standard
@@ -809,46 +828,6 @@ const searchResultLayer = new VectorLayer({
 });
 
 let lineStringId = 0;
-// gpxLayer.getSource().addEventListener("change", function () {
-//   const poiString = [];
-//   gpxLayer.getSource().forEachFeature(function (feature) {
-//     poiString.push([feature.getGeometry().getType(), feature.getGeometry().getCoordinates(), feature.get("name")]);
-//   });
-//   localStorage.gpxLayer = JSON.stringify(poiString);
-// });
-
-// JSON.parse(localStorage.gpxLayer || "[]").forEach(function (element) {
-//   const geomType = element[0];
-//   const coordinates = element[1];
-//   const name = element[2];
-//   const newFeature = new Feature({
-//     geometry: newGeom(geomType, coordinates),
-//     name: name,
-//     gpxFeature: true,
-//   });
-//   if (newFeature.getGeometry().getType() == "LineString" || newFeature.getGeometry().getType() == "MultiLineString") {
-//     newFeature.setId(0);
-//   }
-//   gpxLayer.getSource().addFeature(newFeature);
-// });
-
-// function newGeom(featureType, coordinates) {
-//   if (featureType == "Point") {
-//     return new Point(coordinates);
-//   }
-//   if (featureType == "LineString") {
-//     return new LineString(coordinates);
-//   }
-//   if (featureType == "MultiLineString") {
-//     return new MultiLineString(coordinates);
-//   }
-//   if (featureType == "Polygon") {
-//     return new Polygon(coordinates);
-//   }
-//   if (featureType == "MultiPolygon") {
-//     return new MultiPolygon(coordinates);
-//   }
-// }
 
 const drawLayer = new VectorLayer({
   source: new VectorSource(),
@@ -995,14 +974,14 @@ document.getElementById("layerSelector").addEventListener("change", function () 
 switchMap();
 
 function routeMe() {
-  const numberOfRoutePoints = routePointsLayer.getSource().getFeatures().length;
+  const numberOfRoutePoints = destinationCoordinates.getLength();
   voiceHintsLayer.getSource().clear();
   if (numberOfRoutePoints >= 2) {
     const routeMode = sessionStorage.routeMode;
     console.log("Starting routeMe, routeMode: " + routeMode);
     if (routeMode == "direkt") {
-      routeLineString.setCoordinates([routePointsLineString.getCoordinates()]);
-      trackLength = getLength(routePointsLineString) / 1000;
+      routeLineString.setCoordinates([destinationCoordinates.list()]);
+      trackLength = getLength(routeLineString) / 1000;
       document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
       document.getElementById("totalTime").innerHTML = "";
     }
@@ -1018,17 +997,6 @@ function routeMe() {
 }
 
 function routeMeOSRM() {
-  const coordsString = [];
-  const straightPoints = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates());
-    if (feature.get("straight")) {
-      straightPoints.push(feature.getId());
-    }
-  });
-  // sessionStorage.routeMode
-  // straightPoints
-  // ${sessionStorage.routeMode}
   const params = new URLSearchParams({
     // exclude: ["motorway"],
     // annotations: true,
@@ -1040,7 +1008,7 @@ function routeMeOSRM() {
     skip_waypoints: true,
     steps: enableVoiceHint // || true,
   });
-  fetch(`https://router.project-osrm.org/route/v1/driving/${coordsString.join(";")}?` + params).then(response => {
+  fetch(`https://router.project-osrm.org/route/v1/driving/${destinationCoordinates.listLonLat().join(";")}?` + params).then(response => {
     return response.json();
   }).then(result => {
     console.log(result)
@@ -1056,7 +1024,7 @@ function routeMeOSRM() {
     document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
 
     const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
-    newGeometryCoordinates.push(fromLonLat(coordsString[coordsString.length - 1]));
+    newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
     routeLineString.setCoordinates([newGeometryCoordinates]);
 
     const legs = result.routes[0].legs;
@@ -1069,15 +1037,6 @@ function routeMeOSRM() {
 }
 
 function routeMeORS() {
-  const coordsString = [];
-  const straightPoints = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates());
-    if (feature.get("straight")) {
-      straightPoints.push(feature.getId());
-    }
-  });
-
   const requestBody = {
     method: "post",
     headers: {
@@ -1086,7 +1045,7 @@ function routeMeORS() {
       'Authorization': '5b3ce3597851110001cf62482ba2170071134e8a80497f7f4f2a0683'
     },
     body: JSON.stringify({
-      coordinates: coordsString,
+      coordinates: destinationCoordinates.listLonLat(),
       maneuvers: true,
 
       // preference: "fastest",
@@ -1125,20 +1084,15 @@ function routeMeORS() {
     document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
 
     const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
-    newGeometryCoordinates.push(fromLonLat(coordsString[coordsString.length - 1]));
+    newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
     routeLineString.setCoordinates([newGeometryCoordinates]);
   });
 }
 
 function routeMeGraphHopper() {
-  const coordsString = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates());
-  });
-
   const body = {
     profile: "car",
-    points: coordsString,
+    points: destinationCoordinates.listLonLat(),
     points_encoded: false,
 
     // algorithm: "round_trip",
@@ -1198,18 +1152,13 @@ function routeMeGraphHopper() {
 }
 
 function routeMeGeoapify() {
-  const coordsString = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    coordsString[feature.getId()] = toLonLat(feature.getGeometry().getCoordinates()).reverse();
-  });
-
   const requestOptions = {
     method: "GET",
     redirect: "follow"
   };
 
   const params = new URLSearchParams({
-    waypoints: coordsString.join("|"),
+    waypoints: destinationCoordinates.listLonLat().map(coordinate => coordinate.reverse()).join("|"),
     mode: "drive",
     // mode: "truck",
     // mode: "heavy_truck",
@@ -1256,11 +1205,7 @@ function routeMeGeoapify() {
 }
 
 async function routeMeGoogle() {
-  const points = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    const coords = toLonLat(feature.getGeometry().getCoordinates());
-    points[feature.getId()] = { latitude: coords[1], longitude: coords[0] };
-  });
+  const points = destinationCoordinates.listLonLat().map(coordinate => ({ latitude: coordinate[1], longitude: coordinate[0] }))
 
   if (points.length < 2) return console.error("Need at least 2 points");
 
@@ -1336,11 +1281,7 @@ async function routeMeGoogle() {
 }
 
 function routeMeValhalla() {
-  const points = [];
-  routePointsLayer.getSource().forEachFeature(function (feature) {
-    const coords = toLonLat(feature.getGeometry().getCoordinates());
-    points[feature.getId()] = { lat: coords[1], lon: coords[0], type: "break" };
-  });
+  const points = destinationCoordinates.listLonLat().map(coordinate => ({ lat: coordinate[1], lon: coordinate[0], type: "break" }))
 
   points.slice(1, -1).map(element => element["type"] = "via"); // "through", "via", "break_through"
 
@@ -1480,7 +1421,6 @@ function routeMeValhalla() {
     "exclude_polygons": [],
     "units": "kilometers",
     "alternates": 0,
-    // "id": "valhalla_directions",
     "language": "sv-SE"
   }
 
@@ -1547,10 +1487,10 @@ function openContextPopup(coordinate) {
   const coordinatePixel = map.getPixelFromCoordinate(coordinate);
   contextPopup.setPosition(coordinate);
   contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
-  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(
-    coordinate,
-    feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getCoordinates()), coordinatePixel) < 40
-  );
+  const closestRoutePoint = getPixelDistance(
+    map.getPixelFromCoordinate(coordinate),
+    map.getPixelFromCoordinate(destinationCoordinates.getClosestPointToCoordinate(coordinate))
+  ) < 40;
   const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(
     coordinate,
     feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getCoordinates()), coordinatePixel) < 40
@@ -1605,7 +1545,7 @@ function openContextPopup(coordinate) {
       }
       if (gpxLayer.getSource().hasFeature(gpxFeatureToRemove)) gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
       if (searchResultLayer.getSource().hasFeature(gpxFeatureToRemove)) searchResultLayer.getSource().removeFeature(gpxFeatureToRemove);
-      routeMe();
+      // routeMe();
       contextPopup.setPosition();
     }
   });
@@ -1621,29 +1561,24 @@ function openContextPopup(coordinate) {
 map.addEventListener("click", function (event) {
   if (localStorage.testing) {
     // use for testing
-    console.log(localStorage.testing);
+    console.log("testing: " + localStorage.testing);
   }
-
 
   if (contextPopup.getPosition()) return contextPopup.setPosition(); // remove contextPopup if visible
 
   if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls && enableClickToAdd) {
-    const hit = map.hasFeatureAtPixel(event.pixel, {
-      layerFilter: layerCandidate => layerCandidate.get("routePointsLayer"),
-      hitTolerance: 10,
-    });
+    const closestRoutePoint = destinationCoordinates.getClosestPointToCoordinate(event.coordinate);
 
-    const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(
-      event.coordinate,
-      feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getCoordinates()), map.getPixelFromCoordinate(event.coordinate)) < 40
-    );
-    if (hit) {
-      routePointsLayer.getSource().removeFeature(closestRoutePoint);
+    const routePointIsClose = getPixelDistance(
+      map.getPixelFromCoordinate(event.coordinate),
+      map.getPixelFromCoordinate(closestRoutePoint)
+    ) < 40;
+
+    if (routePointIsClose) {
+      destinationCoordinates.removeCoordinate(closestRoutePoint);
     } else {
-      addRoutePointMarker(event.coordinate);
-      updateRoutePointsLineString();
+      destinationCoordinates.push(event.coordinate);
     }
-    routeMe();
   }
 });
 
@@ -1669,14 +1604,7 @@ map.on("pointermove", function (evt) {
 
   if (hit) {
     this.getTargetElement().style.cursor = "pointer";
-    //   map.forEachFeatureAtPixel(evt.pixel, feature => {
-    //     // if (feature.get("poi")) this.getTargetElement().style.cursor = "context-menu";
-    //     if (feature.get("routePointMarker")) this.getTargetElement().style.cursor = "no-drop"
-    //     else this.getTargetElement().style.cursor = "pointer";
-    //   })
   } else {
-    //   if (!enableClickToAdd) this.getTargetElement().style.cursor = "pointer";
-    //   else 
     if (enableClickToAdd) this.getTargetElement().style.cursor = "crosshair";
     else this.getTargetElement().style.cursor = "auto";
   }
@@ -1706,9 +1634,7 @@ document.addEventListener("keydown", function (event) {
       if (event.key == "c") document.getElementById("contextPopupButton").click();
     }
     if (event.key == "Backspace") {
-      const lastRoutePoint = routePointsLayer.getSource().getFeatureById(routePointsLayer.getSource().getFeatures().length - 1);
-      routePointsLayer.getSource().removeFeature(lastRoutePoint);
-      routeMe();
+      destinationCoordinates.pop();
     }
   }
 });
@@ -1724,17 +1650,14 @@ document.getElementById("streetviewlink").addEventListener("click", function () 
 });
 
 document.getElementById("addRoutePosition").addEventListener("click", function () {
-  addRoutePointMarker(contextPopup.getPosition());
-  updateRoutePointsLineString();
+  destinationCoordinates.push(contextPopup.getPosition());
   contextPopup.setPosition();
-  routeMe();
 });
 
 document.getElementById("removeRoutePosition").addEventListener("click", function () {
-  const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(contextPopup.getPosition());
-  routePointsLayer.getSource().removeFeature(closestRoutePoint);
+  const closestRoutePoint = destinationCoordinates.getClosestPointToCoordinate(contextPopup.getPosition());
+  destinationCoordinates.removeCoordinate(closestRoutePoint);
   contextPopup.setPosition();
-  routeMe();
 });
 
 document.getElementById("addPoiButton").addEventListener("click", function () {
@@ -1772,7 +1695,6 @@ function addSearchResult(poiPosition, name) {
 
 function addRoutePointMarker(coordinate) {
   const routePointsLayerLength = routePointsLayer.getSource().getFeatures().length;
-
   const routePointMarker = new Feature({
     geometry: new Point(coordinate),
     routePointMarker: true,
@@ -1787,13 +1709,11 @@ document.getElementById("removePoiButton").addEventListener("click", function ()
   contextPopup.setPosition();
 });
 
-addPositionButton.addEventListener("click", function (event) {
-  addRoutePointMarker(map.getView().getCenter());
-  updateRoutePointsLineString();
-  routeMe();
+addPositionButton.addEventListener("click", function () {
+  destinationCoordinates.push(map.getView().getCenter());
 });
 
-contextPopupButton.addEventListener("click", function (event) {
+contextPopupButton.addEventListener("click", function () {
   if (contextPopup.getPosition()) {
     // hide if visible
     contextPopup.setPosition();
@@ -1802,26 +1722,17 @@ contextPopupButton.addEventListener("click", function (event) {
   }
 });
 
-removePositionButton.addEventListener("click", function (event) {
+removePositionButton.addEventListener("click", function () {
   try {
-    const closestRoutePoint = routePointsLayer.getSource().getClosestFeatureToCoordinate(map.getView().getCenter());
+    const closestRoutePoint = destinationCoordinates.getClosestPointToCoordinate(map.getView().getCenter());
+
     const closestRoutePointDistance = getPixelDistance(
       map.getPixelFromCoordinate(map.getView().getCenter()),
-      map.getPixelFromCoordinate(closestRoutePoint.getGeometry().getCoordinates())
+      map.getPixelFromCoordinate(closestRoutePoint)
     );
-    const closestRoutePointId = closestRoutePoint.getId();
     if (closestRoutePointDistance < 40) {
-      routePointsLayer.getSource().removeFeature(closestRoutePoint);
+      destinationCoordinates.removeCoordinate(closestRoutePoint);
     }
-    const newRoutePoints = [];
-    for (let i = 0; i < routePointsLayer.getSource().getFeatures().length + 1; i++) {
-      if (i === closestRoutePointId) {
-        continue;
-      }
-      newRoutePoints.push(routePointsLayer.getSource().getFeatureById(i).getGeometry().getCoordinates());
-    };
-    routePointsLineString.setCoordinates(newRoutePoints);
-    routeMe();
   } catch {
     console.log("no points found!")
   }
@@ -1893,14 +1804,13 @@ async function loadData() {
     cell3.appendChild(loadButton);
 
     if (!!localStorage.token && u.username == localStorage.username) {
-      // ta bort knapp
-      const removeButton = document.createElement("button");
-      removeButton.classList.add("btn", "btn-danger");
-
-      removeButton.addEventListener("click", () => { deleteUpload(u) });
-      removeButton.innerHTML = "Ta bort";
-      cell4.appendChild(removeButton);
-
+      // ersätt upload knapp
+      const updateButton = document.createElement("button");
+      updateButton.classList.add("btn", "btn-danger");
+      updateButton.addEventListener("click", () => { editItem(u) });
+      updateButton.innerHTML = "Ersätt";
+      cell4.appendChild(updateButton);
+      
       // växla privat knapp
       const makePublicButton = document.createElement("button");
       makePublicButton.classList.add("btn", is_public ? "btn-success" : "btn-warning");
@@ -1909,13 +1819,14 @@ async function loadData() {
       });
       makePublicButton.innerHTML = is_public ? "Gör privat" : "Gör publik";
       cell5.appendChild(makePublicButton);
+      
+      // ta bort knapp
+      const removeButton = document.createElement("button");
+      removeButton.classList.add("btn", "btn-danger");
 
-      // ersätt upload knapp
-      const updateButton = document.createElement("button");
-      updateButton.classList.add("btn", "btn-danger");
-      updateButton.addEventListener("click", () => { editItem(u) });
-      updateButton.innerHTML = "Ersätt";
-      cell6.appendChild(updateButton);
+      removeButton.addEventListener("click", () => { deleteUpload(u) });
+      removeButton.innerHTML = "Ta bort";
+      cell6.appendChild(removeButton);
     }
 
     const creatorText = document.createElement("small");
@@ -2071,10 +1982,11 @@ async function loadItem(u) {
       drawLayer.getSource().addFeature(element);
     } else if (!!element.get("routePointsLineString")) {
       const routePointsLineStringCoordinates = element.getGeometry().getCoordinates();
-
+      destinationCoordinates.coordinates = element.getGeometry().getCoordinates();
       routePointsLineString.setCoordinates(routePointsLineStringCoordinates);
-      routePointsLineStringCoordinates.forEach(element => {
-        addRoutePointMarker(element);
+      routePointsLayer.getSource().clear();
+      routePointsLineStringCoordinates.forEach(coordinate => {
+        addRoutePointMarker(coordinate);
       });
     } else if (!!element.get("gpxFeature")) {
       gpxLayer.getSource().addFeature(element);
@@ -2083,7 +1995,6 @@ async function loadItem(u) {
 }
 
 function editItem(u) {
-  // if (!confirm("ersätt upload?")) return;
   const oldName = document.getElementById("currentLoadedName").innerHTML;
   const newMessage = (u.item_name != oldName) ? "Varning ersätter:\n" + u.item_name + " med " + (oldName || "ny rutt\n") : "" + "Ange ruttnamn"
 
