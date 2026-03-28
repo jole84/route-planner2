@@ -115,6 +115,7 @@ const destinationCoordinates = {
 let trackLength = 0;
 let poiPosition;
 let enableClickToAdd = document.getElementById("enableClickToAdd").checked;
+let enableClickInfo = document.getElementById("enableClickInfo").checked;
 let enableVoiceHint = false;
 let shortestRoute = true;
 let avoidHighways = false;
@@ -150,6 +151,11 @@ document.getElementById("enableTouchControls").addEventListener("change", functi
 
 document.getElementById("enableClickToAdd").addEventListener("change", function () {
   enableClickToAdd = document.getElementById("enableClickToAdd").checked;
+});
+
+document.getElementById("enableClickInfo").addEventListener("change", function () {
+  infoLayer.getSource().clear();
+  enableClickInfo = document.getElementById("enableClickInfo").checked;
 });
 
 document.getElementById("enableVoiceHint").addEventListener("change", function () {
@@ -409,8 +415,8 @@ document.getElementById("reverseRoute").addEventListener("click", function () {
 const newTileLayer = new VectorTileLayer({
   source: new VectorTileSource({
     format: new MVT(),
-    // url: localStorage.testing ? "https://jole84.se/phpReadFile.php?url=https://jole84.se/tiles/{z}/{x}/{y}.pbf" : 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
-    url: 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
+    url: localStorage.testing ? "https://jole84.se/phpReadFile.php?url=https://jole84.se/tiles/{z}/{x}/{y}.pbf" : 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
+    // url: 'https://jole84.se/tiles/{z}/{x}/{y}.pbf',
     minZoom: 6,
     maxZoom: 14,
   }),
@@ -1547,11 +1553,6 @@ function openContextPopup(coordinate) {
 }
 
 map.addEventListener("click", function (event) {
-  if (localStorage.testing) {
-    // use for testing
-    console.log("testing: " + localStorage.testing);
-  }
-
   if (contextPopup.getPosition()) return contextPopup.setPosition(); // remove contextPopup if visible
 
   if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls && enableClickToAdd) {
@@ -2064,5 +2065,53 @@ document.getElementById("searchInput").addEventListener("change", async () => {
 
   } catch (error) {
     console.error("Places API Search failed:", error);
+  }
+});
+
+const infoLayer = new VectorLayer({
+  source: new VectorSource(),
+  style: function (feature) {
+    console.log(feature.getProperties());
+
+    return new Style({
+      text: new Text({
+        text: String(feature.get("name") || feature.get("objekttyp") || (feature.get("vagtyp") ? [feature.get("vagtyp"), feature.get("maxspeed") + "km/h", feature.get("Namn_130")].join("\n") : "") || feature.get("layer") || "feature"),
+        font: "bold 14px sans-serif",
+        overflow: true,
+        fill: new Fill({
+          color: "black",
+        }),
+        stroke: new Stroke({
+          color: "white",
+          width: 4,
+        }),
+      }),
+      stroke: new Stroke({
+        width: 4,
+        color: [255, 0, 0, 0.8],
+      }),
+      fill: new Fill({
+        color: [255, 0, 0, 0.2],
+      }),
+    })
+  },
+  declutter: true,
+});
+
+map.addLayer(infoLayer);
+
+map.addEventListener("click", function (event) {
+  if (enableClickInfo) {
+    infoLayer.getSource().clear();
+    map.forEachFeatureAtPixel(event.pixel, function (feature) {
+      infoLayer.getSource().addFeature(feature);
+    }, {
+      hitTolerance: 20,
+    });
+  }
+
+  if (localStorage.testing) {
+    // use for testing
+    console.log("testing: " + localStorage.testing);
   }
 });
