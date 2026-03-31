@@ -1499,7 +1499,7 @@ function openContextPopup(coordinate) {
   map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
     console.log(feature);
     if (closestPoi) {
-      document.getElementById("editPoiButton").innerHTML = 'Byt namn på POI "' + closestPoi.get("name") + '"';
+      document.getElementById("editPoiButton").innerHTML = '🛠️ Byt namn på POI "' + closestPoi.get("name") + '"';
       document.getElementById("removePoiButton").innerHTML = '✖ Ta bort POI "' + closestPoi.get("name") + '"';
     }
     if (feature.get("drawing")) {
@@ -1509,8 +1509,9 @@ function openContextPopup(coordinate) {
     }
     if (feature.get("gpxFeature")) {
       gpxFeatureToRemove = feature;
-      document.getElementById("removeGpxFeature").innerHTML = feature.get("name") ? '✖ Ta bort "' + feature.get("name") + '"' : "Ta bort GPX";
+      document.getElementById("removeGpxFeature").innerHTML = feature.get("name") ? '✖ Ta bort "' + feature.get("name") + '"' : "✖ Ta bort GPX";
       document.getElementById("removeGpxFeature").style.display = "unset";
+      document.getElementById("convertGpxFeature").innerHTML = feature.get("name") ? '➕ Spara i projekt: "' + feature.get("name") + '"' : "🧲 Spara GPX i projekt";
       document.getElementById("convertGpxFeature").style.display = "unset";
     }
     document.getElementById("removeDrawing").onclick = function () {

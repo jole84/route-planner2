@@ -271,6 +271,7 @@ code {
 
 /* contextmenu */
 #contextPopup {
+  max-width: 25rem;
   display: flex;
   flex-direction: column;
   background-color: white;
