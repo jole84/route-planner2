@@ -19,7 +19,7 @@ import XYZ from "ol/source/XYZ.js";
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import MVT from 'ol/format/MVT.js';
-import { styleStuff } from "./styleTileFunctions.js"
+import { styleStuff } from "https://jole84.se/styleTileFunctions.js"
 
 const addPositionButton = document.getElementById("addPositionButton");
 const removePositionButton = document.getElementById("removePositionButton");

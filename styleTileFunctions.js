@@ -1,1 +1,0 @@
-/home/johan/git/jole84-maptile/ol-webmap/styleTileFunctions.js
