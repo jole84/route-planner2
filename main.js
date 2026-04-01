@@ -422,7 +422,7 @@ const newTileLayer = new VectorTileLayer({
   }),
   maxZoom: 16.5,
   newTileLayer: true,
-  style: styleStuff,
+  style: (feature, currentResolution) => styleStuff(feature, currentResolution, localStorage.mapMode),
   declutter: true,
 });
 
