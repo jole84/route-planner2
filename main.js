@@ -1973,6 +1973,7 @@ async function loadItem(u) {
     } else if (!!element.get("routePointsLineString")) {
       const routePointsLineStringCoordinates = element.getGeometry().getCoordinates();
       destinationCoordinates.coordinates = element.getGeometry().getCoordinates();
+      localStorage.destinationCoordinates = JSON.stringify(destinationCoordinates.coordinates);
       routePointsLineString.setCoordinates(routePointsLineStringCoordinates);
       routePointsLayer.getSource().clear();
       routePointsLineStringCoordinates.forEach(coordinate => {
