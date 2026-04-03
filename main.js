@@ -1630,12 +1630,12 @@ document.addEventListener("keydown", function (event) {
 });
 
 document.getElementById("gmaplink").addEventListener("click", function () {
-  var gmaplink = "http://maps.google.com/maps?q=" + toLonLat(contextPopup.getPosition()).reverse();
+  var gmaplink = "https://www.google.com/maps/search/?api=1&query=" + toLonLat(contextPopup.getPosition()).reverse();
   window.open(gmaplink);
 });
 
 document.getElementById("streetviewlink").addEventListener("click", function () {
-  var gmaplink = "http://maps.google.com/maps?layer=c&cbll=" + toLonLat(contextPopup.getPosition()).reverse();
+  var gmaplink = "https://www.google.com/maps/@?api=1&map_action=pano&fov=100&viewpoint=" + toLonLat(contextPopup.getPosition()).reverse();
   window.open(gmaplink);
 });
 
