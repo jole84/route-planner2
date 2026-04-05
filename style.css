@@ -10,7 +10,7 @@ body {
 }
 
 #map {
-  background-color: #bfe6ff;
+  background-color: #CBEAFF;
   flex-grow: 1;
   display: flex;
   cursor: crosshair;
