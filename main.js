@@ -486,7 +486,10 @@ function routePointStyle(feature) {
     image: new Icon({
       anchor: [0.5, 1],
       opacity: 0.85,
-      src: "https://jole84.se/images/marker.svg",
+      src:
+        feature.getId() == 0 ? "https://jole84.se/images/start-marker.svg" :
+          feature.getId() == destinationCoordinates.coordinates.length - 1 ? "https://jole84.se/images/end-marker.svg" :
+            "https://jole84.se/images/marker.svg"
     }),
     text: new Text({
       text: String(feature.getId() + 1),
