@@ -220,7 +220,6 @@ document.getElementById("loadProjectButton").addEventListener("click", evt => {
 
 document.getElementById("selectFileButton").addEventListener("click", evt => {
   loadAsProject = false;
-  gpxLayer.getSource().clear();
   getTheFile();
 });
 
