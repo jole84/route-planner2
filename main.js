@@ -1828,7 +1828,7 @@ async function loadData() {
 }
 
 async function uploadRoute() {
-  const name = prompt("Ange ruttnamn");
+  const name = prompt("Ange ruttnamn:");
   document.getElementById("currentLoadedName").innerHTML = name;
   const collection = new Collection();
   const fileFormat = new GeoJSON();
@@ -1989,7 +1989,7 @@ async function loadItem(u) {
 
 function editItem(u) {
   const oldName = document.getElementById("currentLoadedName").innerHTML;
-  const newMessage = (u.item_name != oldName) ? "Varning ersätter:\n" + u.item_name + " med " + (oldName || "ny rutt\n") : "" + "Ange ruttnamn"
+  const newMessage = ((u.item_name != oldName) ? "Varning ersätter:\n" + u.item_name + " med " + ((oldName) || "ny rutt") : ("Uppdaterar " + oldName)) + "\nAnge ruttnamn:"
 
   const name = prompt(newMessage, u.item_name);
   if (!name) return;
