@@ -79,7 +79,8 @@ const destinationCoordinates = {
   getClosestPointToCoordinate(coordinate) {
     const newMultiPoint = new MultiPoint(this.coordinates);
     const closestPoint = newMultiPoint.getClosestPoint(coordinate);
-    return closestPoint;
+    const coordinateIsClose = getPixelDistance(map.getPixelFromCoordinate(coordinate), map.getPixelFromCoordinate(closestPoint)) < 40;
+    return coordinateIsClose ? closestPoint : false;
   },
 
   list() {
@@ -1480,79 +1481,98 @@ contextPopupContent.addEventListener("click", function () { // copy coordinates
 });
 
 function openContextPopup(coordinate) {
+  contextPopupContent.innerHTML = toStringXY(toLonLat(coordinate).reverse(), 5);
   const coordinatePixel = map.getPixelFromCoordinate(coordinate);
   contextPopup.setPosition(coordinate);
-  contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
-  const closestRoutePoint = getPixelDistance(
-    map.getPixelFromCoordinate(coordinate),
-    map.getPixelFromCoordinate(destinationCoordinates.getClosestPointToCoordinate(coordinate))
-  ) < 40;
+  // contextPopup.panIntoView({ animation: { duration: 250 }, margin: 10 });
+
+  const closestRoutePoint = destinationCoordinates.getClosestPointToCoordinate(coordinate);
+
   const closestPoi = poiLayer.getSource().getClosestFeatureToCoordinate(
     coordinate,
     feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getCoordinates()), coordinatePixel) < 40
   );
 
-  document.getElementById("removeDrawing").style.display = "none";
-  document.getElementById("removeGpxFeature").style.display = "none";
-  document.getElementById("convertGpxFeature").style.display = "none";
+  if (closestPoi) {
+    document.getElementById("editPoiButton").innerHTML = '🛠️ Byt namn på POI "' + closestPoi.get("name") + '"';
+    document.getElementById("removePoiButton").innerHTML = '✖ Ta bort POI "' + closestPoi.get("name") + '"';
 
-  let drawingToRemove;
-  let gpxFeatureToRemove;
-  map.forEachFeatureAtPixel(coordinatePixel, function (feature) {
-    console.log(feature);
-    if (closestPoi) {
-      document.getElementById("editPoiButton").innerHTML = '🛠️ Byt namn på POI "' + closestPoi.get("name") + '"';
-      document.getElementById("removePoiButton").innerHTML = '✖ Ta bort POI "' + closestPoi.get("name") + '"';
+    document.getElementById("removePoiButton").onclick = function () {
+      gpxLayer.getSource().removeFeature(closestPoi);
+      contextPopup.setPosition();
     }
-    if (feature.get("drawing")) {
-      drawingToRemove = feature;
-      document.getElementById("removeDrawing").innerHTML = '✖ Ta bort markering "' + feature.get("name") + '"';
-      document.getElementById("removeDrawing").style.display = "unset";
-    }
-    if (feature.get("gpxFeature")) {
-      gpxFeatureToRemove = feature;
-      document.getElementById("removeGpxFeature").innerHTML = feature.get("name") ? '✖ Ta bort "' + feature.get("name") + '"' : "✖ Ta bort GPX";
-      document.getElementById("removeGpxFeature").style.display = "unset";
-      document.getElementById("convertGpxFeature").innerHTML = feature.get("name") ? '➕ Spara i projekt: "' + feature.get("name") + '"' : "🧲 Spara GPX i projekt";
-      document.getElementById("convertGpxFeature").style.display = "unset";
-    }
+  }
+
+  const closestDrawing = drawLayer.getSource().getClosestFeatureToCoordinate(
+    coordinate,
+    feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getClosestPoint(coordinate)), coordinatePixel) < 40
+  );
+
+  if (closestDrawing) {
+    document.getElementById("removeDrawing").innerHTML = '✖ Ta bort markering "' + closestDrawing.get("name") + '"';
     document.getElementById("removeDrawing").onclick = function () {
-      drawLayer.getSource().removeFeature(drawingToRemove);
+      drawLayer.getSource().removeFeature(closestDrawing);
       contextPopup.setPosition();
     }
+  }
+
+  const closestGPXFeature = gpxLayer.getSource().getClosestFeatureToCoordinate(
+    coordinate,
+    feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getClosestPoint(coordinate)), coordinatePixel) < 40
+  );
+
+  if (closestGPXFeature) {
+    document.getElementById("removeGpxFeature").innerHTML = closestGPXFeature.get("name") ? '✖ Ta bort "' + closestGPXFeature.get("name") + '"' : "✖ Ta bort GPX";
+    document.getElementById("convertGpxFeature").innerHTML = closestGPXFeature.get("name") ? '➕ Spara i projekt: "' + closestGPXFeature.get("name") + '"' : "🧲 Spara GPX i projekt";
+
     document.getElementById("removeGpxFeature").onclick = function () {
-      gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
+      gpxLayer.getSource().removeFeature(closestGPXFeature);
       contextPopup.setPosition();
     }
+
     document.getElementById("convertGpxFeature").onclick = function () {
-      gpxFeatureToRemove.unset("gpxFeature");
-      if (gpxFeatureToRemove.getGeometry().getType() === "LineString") {
-        gpxFeatureToRemove.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
+      closestGPXFeature.unset("gpxFeature");
+      if (closestGPXFeature.getGeometry().getType() === "LineString") {
+        closestGPXFeature.getGeometry().simplify(500).getCoordinates().forEach(function (coordinate) {
           routePointsLineString.appendCoordinate(coordinate);
         });
       }
-      if (gpxFeatureToRemove.getGeometry().getType() === "MultiLineString") {
-        gpxFeatureToRemove.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
+      if (closestGPXFeature.getGeometry().getType() === "MultiLineString") {
+        closestGPXFeature.getGeometry().getLineString(0).simplify(500).getCoordinates().forEach(function (coordinate) {
           routePointsLineString.appendCoordinate(coordinate);
         });
       }
-      if (gpxFeatureToRemove.getGeometry().getType() === "Point") {
-        gpxFeatureToRemove.set("poi", true);
-        poiLayer.getSource().addFeature(gpxFeatureToRemove);
+      if (closestGPXFeature.getGeometry().getType() === "Point") {
+        closestGPXFeature.set("poi", true);
+        poiLayer.getSource().addFeature(closestGPXFeature);
       }
-      if (gpxLayer.getSource().hasFeature(gpxFeatureToRemove)) gpxLayer.getSource().removeFeature(gpxFeatureToRemove);
-      if (searchResultLayer.getSource().hasFeature(gpxFeatureToRemove)) searchResultLayer.getSource().removeFeature(gpxFeatureToRemove);
+      if (gpxLayer.getSource().hasFeature(closestGPXFeature)) gpxLayer.getSource().removeFeature(closestGPXFeature);
       // routeMe();
       contextPopup.setPosition();
     }
-  });
+  }
+
+  const closestSearchResult = searchResultLayer.getSource().getClosestFeatureToCoordinate(
+    coordinate,
+    feature => getPixelDistance(map.getPixelFromCoordinate(feature.getGeometry().getClosestPoint(coordinate)), coordinatePixel) < 40
+  );
+
+  if (closestSearchResult) {
+    document.getElementById("convertGpxFeature").innerHTML = closestSearchResult.get("name") ? '➕ Spara i projekt: "' + closestSearchResult.get("name") + '"' : "🧲 Spara sökresultat i projekt";
+    document.getElementById("convertGpxFeature").onclick = function () {
+      closestSearchResult.set("poi", true);
+      poiLayer.getSource().addFeature(closestSearchResult);
+      if (searchResultLayer.getSource().hasFeature(closestSearchResult)) searchResultLayer.getSource().removeFeature(closestSearchResult);
+      contextPopup.setPosition();
+    }
+  }
 
   document.getElementById("removeRoutePosition").style.display = closestRoutePoint ? "unset" : "none";
   document.getElementById("removePoiButton").style.display = closestPoi ? "unset" : "none";
   document.getElementById("editPoiButton").style.display = closestPoi ? "unset" : "none";
-
-
-  contextPopupContent.innerHTML = toStringXY(toLonLat(coordinate).reverse(), 5);
+  document.getElementById("removeDrawing").style.display = closestDrawing ? "unset" : "none";
+  document.getElementById("removeGpxFeature").style.display = closestGPXFeature ? "unset" : "none";
+  document.getElementById("convertGpxFeature").style.display = closestGPXFeature || closestSearchResult ? "unset" : "none";
 }
 
 map.addEventListener("click", function (event) {
