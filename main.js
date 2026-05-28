@@ -528,37 +528,37 @@ function routePointsLayerStyle(feature) {
     })
   })];
 
-  geometry.forEachSegment(function (start, end) {
-    const dx = end[0] - start[0];
-    const dy = end[1] - start[1];
-    const halfx = (start[0] + end[0]) / 2
-    const halfy = (start[1] + end[1]) / 2
-    const rotation = Math.atan2(dy, dx);
-    // arrows
-    styles.push(
-      new Style({
-        geometry: new Point([halfx, halfy]),
-        image: new Icon({
-          src: 'https://openlayers.org/en/latest/examples/data/arrow.png',
-          color: [255, 0, 0, 0.6],
-          // anchor: [-3, 0.5],
-          scale: 2,
-          rotateWithView: true,
-          rotation: -rotation,
-        }),
-        // image: new RegularShape({
-        //   fill: new Fill({
-        //     color: [255, 0, 0, 0.6]
-        //   }),
-        //   points: 3,
-        //   radius: 25,
-        //   displacement: [25, 0],
-        //   rotation: -rotation,
-        //   angle: Math.PI / 2 // rotate 90°
-        // })
-      }),
-    );
-  });
+  // geometry.forEachSegment(function (start, end) {
+  //   const dx = end[0] - start[0];
+  //   const dy = end[1] - start[1];
+  //   const halfx = (start[0] + end[0]) / 2
+  //   const halfy = (start[1] + end[1]) / 2
+  //   const rotation = Math.atan2(dy, dx);
+  //   // arrows
+  //   styles.push(
+  //     new Style({
+  //       geometry: new Point([halfx, halfy]),
+  //       image: new Icon({
+  //         src: 'https://openlayers.org/en/latest/examples/data/arrow.png',
+  //         color: [255, 0, 0, 0.6],
+  //         // anchor: [-3, 0.5],
+  //         scale: 2,
+  //         rotateWithView: true,
+  //         rotation: -rotation,
+  //       }),
+  //       // image: new RegularShape({
+  //       //   fill: new Fill({
+  //       //     color: [255, 0, 0, 0.6]
+  //       //   }),
+  //       //   points: 3,
+  //       //   radius: 25,
+  //       //   displacement: [25, 0],
+  //       //   rotation: -rotation,
+  //       //   angle: Math.PI / 2 // rotate 90°
+  //       // })
+  //     }),
+  //   );
+  // });
 
   return styles;
 }
@@ -1581,18 +1581,77 @@ map.addEventListener("click", function (event) {
   if (!window.matchMedia("(pointer: coarse)").matches && !enableTouchControls && enableClickToAdd) {
     const closestRoutePoint = destinationCoordinates.getClosestPointToCoordinate(event.coordinate);
 
-    const routePointIsClose = getPixelDistance(
-      map.getPixelFromCoordinate(event.coordinate),
-      map.getPixelFromCoordinate(closestRoutePoint)
-    ) < 40;
-
-    if (routePointIsClose) {
+    if (closestRoutePoint) {
+      const routePointIsClose = getPixelDistance(
+        map.getPixelFromCoordinate(event.coordinate),
+        map.getPixelFromCoordinate(closestRoutePoint)
+      ) < 40;
       destinationCoordinates.removeCoordinate(closestRoutePoint);
     } else {
       destinationCoordinates.push(event.coordinate);
     }
   }
 });
+
+document.getElementById('exportPng').addEventListener('click', function () {
+  map.once('rendercomplete', function () {
+    const mapCanvas = document.createElement('canvas');
+    const size = map.getSize();
+    mapCanvas.width = size[0];
+    mapCanvas.height = size[1];
+    const mapContext = mapCanvas.getContext('2d');
+    Array.prototype.forEach.call(
+      map.getViewport().querySelectorAll('.ol-layer canvas, canvas.ol-layer'),
+      function (canvas) {
+        if (canvas.width > 0) {
+          const opacity =
+            canvas.parentNode.style.opacity || canvas.style.opacity;
+          mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
+          let matrix;
+          const transform = canvas.style.transform;
+          if (transform) {
+            // Get the transform parameters from the style's transform matrix
+            matrix = transform
+              .match(/^matrix\(([^\(]*)\)$/)[1]
+              .split(',')
+              .map(Number);
+          } else {
+            matrix = [
+              parseFloat(canvas.style.width) / canvas.width,
+              0,
+              0,
+              parseFloat(canvas.style.height) / canvas.height,
+              0,
+              0,
+            ];
+          }
+          // Apply the transform to the export map context
+          CanvasRenderingContext2D.prototype.setTransform.apply(
+            mapContext,
+            matrix,
+          );
+          // mapContext.fillStyle = "#CBEAFF";
+          mapContext.fillStyle = "white";
+          mapContext.fillRect(0, 0, canvas.width, canvas.height);
+          mapContext.drawImage(canvas, 0, 0);
+          mapContext.drawImage(document.getElementById("controlImage"), canvas.width - 65, canvas.height - 20, 60, 15);
+        }
+      },
+    );
+    mapContext.globalAlpha = 1;
+    mapContext.setTransform(1, 0, 0, 1, 0, 0);
+    const link = document.getElementById('image-download');
+    link.setAttribute('crossOrigin', 'anonymous');
+    try {
+      link.href = mapCanvas.toDataURL();
+      link.click();
+    } catch (error) {
+      alert(error);
+    }
+  });
+  map.renderSync();
+});
+
 
 map.addEventListener("contextmenu", function (event) {
   if (!event.originalEvent.altKey) {

@@ -25,6 +25,7 @@
         <button class="dropbtn">Arkiv</button>
         <div class="dropdown-content">
           <div id="selectFileButton" class="dropdownItem">Öppna GPX-fil</div>
+          <div id="exportPng" class="dropdownItem">🗺️ Spara .png bild</div>
           <div id="loadProjectButton" class="dropdownItem">Öppna Projektfil</div>
           <div id="exportGPXButton" class="dropdownItem">📲 Exportera .gpx fil</div>
           <div id="saveGeoJsonButton" class="dropdownItem">💾 Spara projekt som .geojson</div>
@@ -262,6 +263,8 @@
       <div class="routeControl invisible" id="removeGpxFeature">Ta bort GPX</div>
     </div>
   </div>
+  <img src="https://jole84.se/images/jole84.svg" class="controlImage invisible" id="controlImage">
+  <a id="image-download" class="invisible" download="karta.png"></a>
 </body>
 
 </html>
