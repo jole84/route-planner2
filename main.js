@@ -937,10 +937,10 @@ map.addInteraction(modifyRoutePointsLineString);
 map.addInteraction(modifyRoutePoints);
 map.addInteraction(modifyPoiLayer);
 
-window.onbeforeunload = function () {
+view.on("change", () => {
   localStorage.centerCoordinate = JSON.stringify(view.getCenter());
   localStorage.centerZoom = view.getZoom();
-}
+});
 
 function getPixelDistance(pixel, pixel2) {
   return Math.sqrt((pixel[1] - pixel2[1]) * (pixel[1] - pixel2[1]) + (pixel[0] - pixel2[0]) * (pixel[0] - pixel2[0]));
