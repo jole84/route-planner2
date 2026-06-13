@@ -1819,6 +1819,7 @@ document.getElementById("storeRouteButton").onclick = function () {
 }
 
 document.getElementById("loginButton").onclick = login;
+document.getElementById("createUserButton").onclick = createuser;
 document.getElementById("logoutButton").onclick = logout;
 document.getElementById("uploadRouteButton").onclick = uploadRoute;
 document.getElementById("deleteUserButton").onclick = deleteUser;
@@ -1937,6 +1938,25 @@ async function login() {
   const password = document.getElementById("password").value;
 
   const r = await api("login", { username, password });
+
+  if (r.success) {
+    localStorage.setItem("token", r.token);
+    localStorage.setItem("username", r.username);
+    showApp(username);
+    loadData();
+  } else {
+    alert(r.error);
+  }
+}
+
+async function createuser() {
+  const username = document.getElementById("newUsername").value.trim();
+  const password = document.getElementById("newUserPassword").value;
+  const verifyNewPassword = document.getElementById("verifyNewUserPassword").value;
+
+  if (!password || (password != verifyNewPassword)) return;
+
+  const r = await api("register", { username, password });
 
   if (r.success) {
     localStorage.setItem("token", r.token);
