@@ -984,6 +984,7 @@ switchMap();
 
 function routeMe() {
   voiceHintsLayer.getSource().clear();
+  document.getElementById("info1").innerHTML = "";
   if (destinationCoordinates.getLength() >= 2) {
     const routeMode = sessionStorage.routeMode;
     console.log("Starting routeMe, routeMode: " + routeMode);
@@ -1005,461 +1006,484 @@ function routeMe() {
 }
 
 async function routeMeOSRM() {
-  const params = new URLSearchParams({
-    // exclude: ["motorway"],
-    // annotations: true,
-    // radiuses: 50,
-    geometries: 'geojson',
-    continue_straight: false,
-    overview: 'full',
-    generate_hints: false,
-    skip_waypoints: true,
-    steps: enableVoiceHint // || true,
-  });
+  try {
+    const params = new URLSearchParams({
+      // exclude: ["motorway"],
+      // annotations: true,
+      // radiuses: 50,
+      geometries: 'geojson',
+      continue_straight: false,
+      overview: 'full',
+      generate_hints: false,
+      skip_waypoints: true,
+      steps: enableVoiceHint // || true,
+    });
 
-  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${destinationCoordinates.listLonLat().join(";")}?` + params);
-  const result = await response.json();
+    const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${destinationCoordinates.listLonLat().join(";")}?` + params);
 
-  console.log(result);
-  const format = new GeoJSON();
-  const newGeometry = format.readFeature(result.routes[0].geometry, {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857"
-  });
+    const result = await response.json();
 
-  trackLength = result.routes[0].distance / 1000; // track-length in km
-  const totalTime = result.routes[0].duration * 1000; // track-time in milliseconds
-  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+    console.log(result);
+    const format = new GeoJSON();
+    const newGeometry = format.readFeature(result.routes[0].geometry, {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
 
-  const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
-  newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
-  routeLineString.setCoordinates([newGeometryCoordinates]);
+    trackLength = result.routes[0].distance / 1000; // track-length in km
+    const totalTime = result.routes[0].duration * 1000; // track-time in milliseconds
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
 
-  const legs = result.routes[0].legs;
-  for (const leg of legs) {
-    for (const step of leg.steps) {
-      createTurnHint(step);
+    const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
+    newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
+    routeLineString.setCoordinates([newGeometryCoordinates]);
+
+    const legs = result.routes[0].legs;
+    for (const leg of legs) {
+      for (const step of leg.steps) {
+        createTurnHint(step);
+      }
     }
+  } catch (error) {
+    document.getElementById("info1").innerHTML = error;
   }
 }
 
 async function routeMeORS() {
-  const requestBody = {
-    method: "post",
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
-      'Authorization': '5b3ce3597851110001cf62482ba2170071134e8a80497f7f4f2a0683'
-    },
-    body: JSON.stringify({
-      coordinates: destinationCoordinates.listLonLat(),
-      maneuvers: true,
-
-      // preference: "fastest",
-      preference: shortestRoute ? "shortest" : "recommended",
-
-      // maximum_speed: 85,
-      // skip_segments: [1],
-
-      options: {
-        avoid_features: avoidHighways ? ["highways"] : [],
-        // round_trip: {
-        //   length: 100000,
-        //   points: 2,
-        //   seed: 5
-        // }
+  try {
+    const requestBody = {
+      method: "post",
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+        'Authorization': '5b3ce3597851110001cf62482ba2170071134e8a80497f7f4f2a0683'
       },
-    })
-  };
+      body: JSON.stringify({
+        coordinates: destinationCoordinates.listLonLat(),
+        maneuvers: true,
 
-  const response = await fetch(`https://api.openrouteservice.org/v2/directions/driving-car/geojson?`, requestBody);
-  console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
-  const result = await response.json();
+        // preference: "fastest",
+        preference: shortestRoute ? "shortest" : "recommended",
 
-  console.log(result);
-  // destinationCoordinates[destinationCoordinates.length - 1] = result.features[0].geometry.coordinates[result.features[0].geometry.coordinates.length - 1];
-  const format = new GeoJSON();
-  const newGeometry = format.readFeature(result.features[0].geometry, {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857"
-  });
+        // maximum_speed: 85,
+        // skip_segments: [1],
 
-  trackLength = result.features[0].properties.summary.distance / 1000; // track-length in km
-  const totalTime = result.features[0].properties.summary.duration * 1000;
-  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+        options: {
+          avoid_features: avoidHighways ? ["highways"] : [],
+          // round_trip: {
+          //   length: 100000,
+          //   points: 2,
+          //   seed: 5
+          // }
+        },
+      })
+    };
+    const response = await fetch(`https://api.openrouteservice.org/v2/directions/driving-car/geojson?`, requestBody);
+    console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
+    const result = await response.json();
 
-  const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
-  newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
-  routeLineString.setCoordinates([newGeometryCoordinates]);
+    console.log(result);
+    // destinationCoordinates[destinationCoordinates.length - 1] = result.features[0].geometry.coordinates[result.features[0].geometry.coordinates.length - 1];
+    const format = new GeoJSON();
+    const newGeometry = format.readFeature(result.features[0].geometry, {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
+
+    trackLength = result.features[0].properties.summary.distance / 1000; // track-length in km
+    const totalTime = result.features[0].properties.summary.duration * 1000;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+    const newGeometryCoordinates = newGeometry.getGeometry().getCoordinates();
+    newGeometryCoordinates.push(destinationCoordinates.getLastCoordinate());
+    routeLineString.setCoordinates([newGeometryCoordinates]);
+  } catch (error) {
+    document.getElementById("info1").innerHTML = error;
+  }
 }
 
 async function routeMeGraphHopper() {
-  const body = {
-    profile: "car",
-    points: destinationCoordinates.listLonLat(),
-    points_encoded: false,
+  try {
+    const body = {
+      profile: "car",
+      points: destinationCoordinates.listLonLat(),
+      points_encoded: false,
 
-    // algorithm: "round_trip",
-    // "round_trip.distance": 10000,
-    // "round_trip.seed": 5,
+      // algorithm: "round_trip",
+      // "round_trip.distance": 10000,
+      // "round_trip.seed": 5,
 
-    // snap_preventions: ["motorway","ferry","tunnel"],
+      // snap_preventions: ["motorway","ferry","tunnel"],
 
-    // optimize: true,
+      // optimize: true,
 
-    // "ch.disable": true, // "Free packages cannot use flexible mode"
-    // custom_model: {
-    // speed: [
-    //   {
-    //     if: true,
-    //     limit_to: 100
-    //   }
-    // ],
-    // priority: [
-    //   {
-    //     if: "road_class == MOTORWAY",
-    //     multiply_by: "0"
-    //   }
-    // ],
-    // distance_influence: 100
-    // }
+      // "ch.disable": true, // "Free packages cannot use flexible mode"
+      // custom_model: {
+      // speed: [
+      //   {
+      //     if: true,
+      //     limit_to: 100
+      //   }
+      // ],
+      // priority: [
+      //   {
+      //     if: "road_class == MOTORWAY",
+      //     multiply_by: "0"
+      //   }
+      // ],
+      // distance_influence: 100
+      // }
+    }
+    const response = await fetch('https://graphhopper.com/api/1/route?key=89fef6e4-250b-400c-8e85-1ab9107f84a8', {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(body),
+    });
+
+    console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
+    const result = await response.json();
+
+    // response.headers.forEach((val, key) => {
+    //   console.log(key, val);
+    // });
+
+    console.log(result);
+    const format = new GeoJSON();
+    const newGeometry = format.readFeature((result.paths[0].points), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
+
+    trackLength = result.paths[0].distance / 1000;
+    const totalTime = result.paths[0].time;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+  } catch (error) {
+    document.getElementById("info1").innerHTML = error;
   }
-
-  const response = await fetch('https://graphhopper.com/api/1/route?key=89fef6e4-250b-400c-8e85-1ab9107f84a8', {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-    },
-    body: JSON.stringify(body),
-  });
-
-  console.log("x-ratelimit-remaining", response.headers.get("x-ratelimit-remaining"));
-  const result = await response.json();
-
-  // response.headers.forEach((val, key) => {
-  //   console.log(key, val);
-  // });
-
-  console.log(result);
-  const format = new GeoJSON();
-  const newGeometry = format.readFeature((result.paths[0].points), {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857"
-  });
-
-  trackLength = result.paths[0].distance / 1000;
-  const totalTime = result.paths[0].time;
-  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-  routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
 }
 
 async function routeMeGeoapify() {
-  const requestOptions = {
-    method: "GET",
-    redirect: "follow"
-  };
+  try {
+    const requestOptions = {
+      method: "GET",
+      redirect: "follow"
+    };
 
-  const params = new URLSearchParams({
-    waypoints: destinationCoordinates.listLonLat().map(coordinate => coordinate.reverse()).join("|"),
-    mode: "drive",
-    // mode: "truck",
-    // mode: "heavy_truck",
-    // mode: "long_truck",
-    // mode: "motorcycle",
-    apiKey: import.meta.env.VITE_GEOAPIFY_API_KEY,
-    // avoid: "highways",
-    lang: "sv",
-    // details: "instruction_details",
-    // traffic: "approximated",
-    // max_speed: 80,
-    // avoid: "location:57.893118,14.371427",
-    // type: "balanced",
-    // type: "short",
-    // type: "less_maneuvers",
-    type: shortestRoute ? "short" : "balanced",
-  });
+    const params = new URLSearchParams({
+      waypoints: destinationCoordinates.listLonLat().map(coordinate => coordinate.reverse()).join("|"),
+      mode: "drive",
+      // mode: "truck",
+      // mode: "heavy_truck",
+      // mode: "long_truck",
+      // mode: "motorcycle",
+      apiKey: import.meta.env.VITE_GEOAPIFY_API_KEY,
+      // avoid: "highways",
+      lang: "sv",
+      // details: "instruction_details",
+      // traffic: "approximated",
+      // max_speed: 80,
+      // avoid: "location:57.893118,14.371427",
+      // type: "balanced",
+      // type: "short",
+      // type: "less_maneuvers",
+      type: shortestRoute ? "short" : "balanced",
+    });
 
-  if (avoidHighways) params.append("avoid", "highways");
+    if (avoidHighways) params.append("avoid", "highways");
 
-  const response = await fetch('https://api.geoapify.com/v1/routing?' + params, requestOptions);
-  const result = await response.json();
+    const response = await fetch('https://api.geoapify.com/v1/routing?' + params, requestOptions);
+    const result = await response.json();
 
-  console.log(result);
-  const format = new GeoJSON();
-  const newGeometry = format.readFeature((result.features[0].geometry), {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857"
-  });
+    console.log(result);
+    const format = new GeoJSON();
+    const newGeometry = format.readFeature((result.features[0].geometry), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
 
-  trackLength = result.features[0].properties.distance / 1000;
-  const totalTime = result.features[0].properties.time * 1000;
-  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+    trackLength = result.features[0].properties.distance / 1000;
+    const totalTime = result.features[0].properties.time * 1000;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
 
-  routeLineString.setCoordinates([newGeometry.getGeometry().getLineString().getCoordinates()]);
+    routeLineString.setCoordinates([newGeometry.getGeometry().getLineString().getCoordinates()]);
+  } catch (error) {
+    document.getElementById("info1").innerHTML = error;
+  }
 }
 
 async function routeMeGoogle() {
-  const points = destinationCoordinates.listLonLat().map(coordinate => ({ latitude: coordinate[1], longitude: coordinate[0] }))
+  try {
+    const points = destinationCoordinates.listLonLat().map(coordinate => ({ latitude: coordinate[1], longitude: coordinate[0] }))
 
-  if (points.length < 2) return console.error("Need at least 2 points");
+    if (points.length < 2) return console.error("Need at least 2 points");
 
-  const origin = { location: { latLng: points[0] } };
-  const destination = { location: { latLng: points[points.length - 1] } };
-  const intermediates = points.slice(1, -1).map(p => ({ location: { latLng: p } }));
+    const origin = { location: { latLng: points[0] } };
+    const destination = { location: { latLng: points[points.length - 1] } };
+    const intermediates = points.slice(1, -1).map(p => ({ location: { latLng: p } }));
 
-  let FieldMask = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'
-  if (enableVoiceHint) FieldMask += ',routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.startLocation';
+    let FieldMask = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'
+    if (enableVoiceHint) FieldMask += ',routes.legs.steps.navigationInstruction,routes.legs.steps.distanceMeters,routes.legs.steps.startLocation';
 
-  const requestBody = {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-      // FieldMask determines the cost/data returned
-      'X-Goog-FieldMask': FieldMask,
-    },
-    body: JSON.stringify({
-      origin,
-      destination,
-      intermediates,
-      travelMode: 'DRIVE',
-      // travelMode: 'TWO_WHEELER',
-      // requestedReferenceRoutes: shortestRoute ? ["SHORTER_DISTANCE"] : [], // "FUEL_EFFICIENT"
-      // routingPreference: 'TRAFFIC_AWARE',
-      routingPreference: 'TRAFFIC_UNAWARE',
-      units: 'METRIC',
-      languageCode: 'sv-SE',
-      routeModifiers: {
-        // avoidTolls: true,
-        // avoidFerries: true,
-        avoidHighways: avoidHighways,
+    const requestBody = {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+        // FieldMask determines the cost/data returned
+        'X-Goog-FieldMask': FieldMask,
       },
-    }),
-  };
+      body: JSON.stringify({
+        origin,
+        destination,
+        intermediates,
+        travelMode: 'DRIVE',
+        // travelMode: 'TWO_WHEELER',
+        // requestedReferenceRoutes: shortestRoute ? ["SHORTER_DISTANCE"] : [], // "FUEL_EFFICIENT"
+        // routingPreference: 'TRAFFIC_AWARE',
+        routingPreference: 'TRAFFIC_UNAWARE',
+        units: 'METRIC',
+        languageCode: 'sv-SE',
+        routeModifiers: {
+          // avoidTolls: true,
+          // avoidFerries: true,
+          avoidHighways: avoidHighways,
+        },
+      }),
+    };
 
-  const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', requestBody);
-  const result = await response.json();
+    const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', requestBody);
+    const result = await response.json();
 
-  console.log(result);
+    console.log(result);
 
-  const format = new Polyline();
-  const newGeometry = format.readFeature((result.routes[0].polyline.encodedPolyline), {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857"
-  });
-
-  trackLength = result.routes[0].distanceMeters / 1000;
-  const totalTime = result.routes[0].duration.replace("s", "") * 1000;
-  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-  routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
-
-  voiceHintsLayer.getSource().clear();
-  if (enableVoiceHint) {
-    result.routes[0].legs.forEach(leg => {
-      leg.steps.forEach(step => {
-        console.log(step);
-
-        const maneuverCoordinate = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
-
-        const instructionText = step.navigationInstruction.instructions;
-        const marker = new Feature({
-          name: instructionText,
-          geometry: new Point(maneuverCoordinate),
-        });
-        voiceHintsLayer.getSource().addFeature(marker);
-      });
+    const format = new Polyline();
+    const newGeometry = format.readFeature((result.routes[0].polyline.encodedPolyline), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
     });
+
+    trackLength = result.routes[0].distanceMeters / 1000;
+    const totalTime = result.routes[0].duration.replace("s", "") * 1000;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+
+    voiceHintsLayer.getSource().clear();
+    if (enableVoiceHint) {
+      result.routes[0].legs.forEach(leg => {
+        leg.steps.forEach(step => {
+          console.log(step);
+
+          const maneuverCoordinate = fromLonLat([step.startLocation.latLng.longitude, step.startLocation.latLng.latitude]);
+
+          const instructionText = step.navigationInstruction.instructions;
+          const marker = new Feature({
+            name: instructionText,
+            geometry: new Point(maneuverCoordinate),
+          });
+          voiceHintsLayer.getSource().addFeature(marker);
+        });
+      });
+    }
+  } catch (error) {
+    document.getElementById("info1").innerHTML = error;
   }
 }
 
 async function routeMeValhalla() {
-  const points = destinationCoordinates.listLonLat().map(coordinate => ({ lat: coordinate[1], lon: coordinate[0], type: "break" }))
+  try {
+    const points = destinationCoordinates.listLonLat().map(coordinate => ({ lat: coordinate[1], lon: coordinate[0], type: "break" }))
 
-  points.slice(1, -1).map(element => element["type"] = "via"); // "through", "via", "break_through"
+    points.slice(1, -1).map(element => element["type"] = "via"); // "through", "via", "break_through"
 
-  // const vehicleType = "auto";
-  // const vehicleType = "truck";
-  const vehicleType = "motorcycle";
+    // const vehicleType = "auto";
+    // const vehicleType = "truck";
+    const vehicleType = "motorcycle";
 
-  const params = {
-    locations: points,
-    "costing": vehicleType,
-    "costing_options": {
-      "auto": {
-        "maneuver_penalty": 5,
-        "country_crossing_penalty": 0,
-        "country_crossing_cost": 600,
-        "width": 1.6,
-        "height": 1.9,
-        "use_highways": avoidHighways ? 0 : 1,
-        "use_tolls": 1,
-        "use_ferry": 1,
-        "ferry_cost": 300,
-        "use_living_streets": 0.5,
-        "use_tracks": 0,
-        "private_access_penalty": 450,
-        "destination_only_penalty": 300,
-        "ignore_closures": false,
-        "ignore_restrictions": false,
-        "ignore_access": false,
-        "closure_factor": 9,
-        "service_penalty": 15,
-        "service_factor": 1,
-        "exclude_unpaved": false,
-        "shortest": shortestRoute,
-        "exclude_cash_only_tolls": false,
-        "top_speed": 95,
-        "fixed_speed": 0,
-        "toll_booth_penalty": 0,
-        "toll_booth_cost": 15,
-        "gate_penalty": 300,
-        "gate_cost": 30,
-        "include_hov2": false,
-        "include_hov3": false,
-        "include_hot": false,
-        "disable_hierarchy_pruning": false,
-        "speed_types": [
-          "current",
-          "freeflow",
-          "predicted",
-          "constrained"
-        ]
+    const params = {
+      locations: points,
+      "costing": vehicleType,
+      "costing_options": {
+        "auto": {
+          "maneuver_penalty": 5,
+          "country_crossing_penalty": 0,
+          "country_crossing_cost": 600,
+          "width": 1.6,
+          "height": 1.9,
+          "use_highways": avoidHighways ? 0 : 1,
+          "use_tolls": 1,
+          "use_ferry": 1,
+          "ferry_cost": 300,
+          "use_living_streets": 0.5,
+          "use_tracks": 0,
+          "private_access_penalty": 450,
+          "destination_only_penalty": 300,
+          "ignore_closures": false,
+          "ignore_restrictions": false,
+          "ignore_access": false,
+          "closure_factor": 9,
+          "service_penalty": 15,
+          "service_factor": 1,
+          "exclude_unpaved": false,
+          "shortest": shortestRoute,
+          "exclude_cash_only_tolls": false,
+          "top_speed": 95,
+          "fixed_speed": 0,
+          "toll_booth_penalty": 0,
+          "toll_booth_cost": 15,
+          "gate_penalty": 300,
+          "gate_cost": 30,
+          "include_hov2": false,
+          "include_hov3": false,
+          "include_hot": false,
+          "disable_hierarchy_pruning": false,
+          "speed_types": [
+            "current",
+            "freeflow",
+            "predicted",
+            "constrained"
+          ]
+        },
+        "motorcycle": {
+          "maneuver_penalty": 5,
+          "country_crossing_penalty": 0,
+          "country_crossing_cost": 600,
+          "width": 1.6,
+          "height": 1.9,
+          "use_highways": avoidHighways ? 0 : 1,
+          "use_tolls": 1,
+          "use_ferry": 1,
+          "ferry_cost": 300,
+          "use_living_streets": 0.5,
+          "use_tracks": 0,
+          "private_access_penalty": 450,
+          "destination_only_penalty": 300,
+          "ignore_closures": false,
+          "ignore_restrictions": false,
+          "ignore_access": false,
+          "closure_factor": 9,
+          "service_penalty": 15,
+          "service_factor": 1,
+          "shortest": shortestRoute,
+          "exclude_cash_only_tolls": false,
+          "top_speed": 140,
+          "fixed_speed": 0,
+          "toll_booth_penalty": 0,
+          "toll_booth_cost": 15,
+          "gate_penalty": 300,
+          "gate_cost": 30,
+          "include_hov2": false,
+          "include_hov3": false,
+          "include_hot": false,
+          "disable_hierarchy_pruning": false,
+          "use_trails": 0,
+          "speed_types": [
+            "current",
+            "freeflow",
+            "predicted",
+            "constrained"
+          ]
+        },
+        "truck": {
+          "maneuver_penalty": 5,
+          "country_crossing_penalty": 0,
+          "country_crossing_cost": 600,
+          "length": 24,
+          "width": 2.6,
+          "height": 4.5,
+          "weight": 21.77,
+          "axle_load": 9,
+          "hazmat": false,
+          "use_highways": avoidHighways ? 0 : 1,
+          "use_tolls": 1,
+          "use_ferry": 1,
+          "ferry_cost": 300,
+          "use_living_streets": 0.5,
+          "use_tracks": 0,
+          "private_access_penalty": 450,
+          "ignore_closures": false,
+          "ignore_restrictions": false,
+          "ignore_access": false,
+          "closure_factor": 9,
+          "service_penalty": 15,
+          "service_factor": 1,
+          "exclude_unpaved": false,
+          "shortest": shortestRoute,
+          "exclude_cash_only_tolls": false,
+          "top_speed": 90,
+          "axle_count": 5,
+          "fixed_speed": 0,
+          "toll_booth_penalty": 0,
+          "toll_booth_cost": 15,
+          "gate_penalty": 300,
+          "gate_cost": 30,
+          "include_hov2": false,
+          "include_hov3": false,
+          "include_hot": false,
+          "disable_hierarchy_pruning": false,
+          "speed_types": [
+            "current",
+            "freeflow",
+            "predicted",
+            "constrained"
+          ]
+        }
       },
-      "motorcycle": {
-        "maneuver_penalty": 5,
-        "country_crossing_penalty": 0,
-        "country_crossing_cost": 600,
-        "width": 1.6,
-        "height": 1.9,
-        "use_highways": avoidHighways ? 0 : 1,
-        "use_tolls": 1,
-        "use_ferry": 1,
-        "ferry_cost": 300,
-        "use_living_streets": 0.5,
-        "use_tracks": 0,
-        "private_access_penalty": 450,
-        "destination_only_penalty": 300,
-        "ignore_closures": false,
-        "ignore_restrictions": false,
-        "ignore_access": false,
-        "closure_factor": 9,
-        "service_penalty": 15,
-        "service_factor": 1,
-        "shortest": shortestRoute,
-        "exclude_cash_only_tolls": false,
-        "top_speed": 140,
-        "fixed_speed": 0,
-        "toll_booth_penalty": 0,
-        "toll_booth_cost": 15,
-        "gate_penalty": 300,
-        "gate_cost": 30,
-        "include_hov2": false,
-        "include_hov3": false,
-        "include_hot": false,
-        "disable_hierarchy_pruning": false,
-        "use_trails": 0,
-        "speed_types": [
-          "current",
-          "freeflow",
-          "predicted",
-          "constrained"
-        ]
-      },
-      "truck": {
-        "maneuver_penalty": 5,
-        "country_crossing_penalty": 0,
-        "country_crossing_cost": 600,
-        "length": 24,
-        "width": 2.6,
-        "height": 4.5,
-        "weight": 21.77,
-        "axle_load": 9,
-        "hazmat": false,
-        "use_highways": avoidHighways ? 0 : 1,
-        "use_tolls": 1,
-        "use_ferry": 1,
-        "ferry_cost": 300,
-        "use_living_streets": 0.5,
-        "use_tracks": 0,
-        "private_access_penalty": 450,
-        "ignore_closures": false,
-        "ignore_restrictions": false,
-        "ignore_access": false,
-        "closure_factor": 9,
-        "service_penalty": 15,
-        "service_factor": 1,
-        "exclude_unpaved": false,
-        "shortest": shortestRoute,
-        "exclude_cash_only_tolls": false,
-        "top_speed": 90,
-        "axle_count": 5,
-        "fixed_speed": 0,
-        "toll_booth_penalty": 0,
-        "toll_booth_cost": 15,
-        "gate_penalty": 300,
-        "gate_cost": 30,
-        "include_hov2": false,
-        "include_hov3": false,
-        "include_hot": false,
-        "disable_hierarchy_pruning": false,
-        "speed_types": [
-          "current",
-          "freeflow",
-          "predicted",
-          "constrained"
-        ]
-      }
-    },
-    "exclude_polygons": [],
-    "units": "kilometers",
-    "alternates": 0,
-    "language": "sv-SE"
-  }
+      "exclude_polygons": [],
+      "units": "kilometers",
+      "alternates": 0,
+      "language": "sv-SE"
+    }
 
-  const response = await fetch('https://valhalla1.openstreetmap.de/route?json=' + JSON.stringify(params));
-  const result = await response.json();
+    const response = await fetch('https://valhalla1.openstreetmap.de/route?json=' + JSON.stringify(params));
+    const result = await response.json();
 
-  console.log(result);
+    console.log(result);
 
-  const format = new Polyline({
-    factor: "1e6",
-    geometryLayout: "XY"
-  });
-  const newGeometry = format.readFeature((result.trip.legs[0].shape), {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857"
-  });
-
-  trackLength = result.trip.summary.length;
-  const totalTime = result.trip.summary.time * 1000;
-  document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
-  document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
-
-  routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
-
-
-  voiceHintsLayer.getSource().clear();
-  if (enableVoiceHint) {
-    let maneuverDistance = 0;
-    result.trip.legs.forEach(leg => {
-      const maneuvers = leg.maneuvers;
-      maneuvers.forEach(maneuver => {
-        const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
-        maneuverDistance += maneuver.length;
-        const marker = new Feature({
-          name: maneuver.instruction,
-          geometry: new Point(maneuverCoordinate),
-        });
-        voiceHintsLayer.getSource().addFeature(marker);
-      })
+    const format = new Polyline({
+      factor: "1e6",
+      geometryLayout: "XY"
     });
+    const newGeometry = format.readFeature((result.trip.legs[0].shape), {
+      dataProjection: "EPSG:4326",
+      featureProjection: "EPSG:3857"
+    });
+
+    trackLength = result.trip.summary.length;
+    const totalTime = result.trip.summary.time * 1000;
+    document.getElementById("trackLength").innerHTML = "Avstånd: " + trackLength.toFixed(2) + " km";
+    document.getElementById("totalTime").innerHTML = "Restid: " + new Date(0 + totalTime).toUTCString().toString().slice(16, 25);
+
+    routeLineString.setCoordinates([newGeometry.getGeometry().getCoordinates()]);
+
+
+    voiceHintsLayer.getSource().clear();
+    if (enableVoiceHint) {
+      let maneuverDistance = 0;
+      result.trip.legs.forEach(leg => {
+        const maneuvers = leg.maneuvers;
+        maneuvers.forEach(maneuver => {
+          const maneuverCoordinate = routeLineString.getLineString().getCoordinateAt(maneuverDistance / trackLength);
+          maneuverDistance += maneuver.length;
+          const marker = new Feature({
+            name: maneuver.instruction,
+            geometry: new Point(maneuverCoordinate),
+          });
+          voiceHintsLayer.getSource().addFeature(marker);
+        })
+      });
+    }
+  } catch (error) {
+    document.getElementById("info1").innerHTML = error;
   }
 }
 
