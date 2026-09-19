@@ -390,7 +390,6 @@ document.getElementById("appViewClearMapButton").onclick = clearMap;
 document.getElementById("appViewClearMapButton2").onclick = clearMap;
 
 function clearMap() {
-  currentLoadedItem = "";
   document.getElementById("currentLoadedName").innerHTML = "";
   document.getElementById("totalTime").innerHTML = "";
   document.getElementById("trackLength").innerHTML = "";
@@ -2061,12 +2060,6 @@ async function deleteUpload(u) {
   loadData();
 }
 
-let currentLoadedItem;
-function uploadSaveButtonFunction() {
-  editItem(currentLoadedItem);
-}
-document.getElementById("uploadSaveButton").onclick = uploadSaveButtonFunction;
-
 async function loadItem(u) {
   const r = await api("get_item", { id: u.id });
 
@@ -2093,10 +2086,7 @@ async function loadItem(u) {
     console.log(error);
   }
 
-  currentLoadedItem = u;
   document.getElementById("currentLoadedName").innerHTML = u.item_name;
-  document.getElementById("uploadSaveButton").innerHTML = "spara " + u.item_name;
-
   newGeometry.forEach(element => {
     if (element.get("routeMode")) sessionStorage.routeMode = document.getElementById("routeModeSelector").value = element.get("routeMode");
     if (!!element.get("routeLineString")) {
@@ -2115,7 +2105,6 @@ async function loadItem(u) {
         addRoutePointMarker(coordinate);
       });
     } else if (!!element.get("gpxFeature")) {
-      element.setId(lineStringId++);
       gpxLayer.getSource().addFeature(element);
     }
   });
