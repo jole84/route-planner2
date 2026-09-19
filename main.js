@@ -2105,6 +2105,7 @@ async function loadItem(u) {
         addRoutePointMarker(coordinate);
       });
     } else if (!!element.get("gpxFeature")) {
+      element.setId(lineStringId++);
       gpxLayer.getSource().addFeature(element);
     }
   });
