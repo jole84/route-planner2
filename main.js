@@ -28,6 +28,8 @@ const menuDivcontent = document.getElementById("menuDivContent");
 const menuItems = document.getElementById("menuItems");
 const exportLinks = document.getElementById("exportLinks");
 const routeStorageMenu = document.getElementById("routeStorageMenu");
+const updateRouteButton = document.getElementById("updateRouteButton");
+let currentLoadedItem = "";
 
 const destinationCoordinates = {
   coordinates: JSON.parse(localStorage.destinationCoordinates || "[]"),
@@ -1862,11 +1864,20 @@ async function api(action, data = {}) {
   return res.json();
 }
 
+updateRouteButton.addEventListener("click", function () {
+  editItem(currentLoadedItem);
+});
+
 async function loadData() {
   const r = await api("list");
 
   document.getElementById("uploads").replaceChildren();
   r.uploads.forEach(u => {
+    if (u.item_name == document.getElementById("currentLoadedName").innerHTML) {
+      updateRouteButton.innerHTML = "Uppdatera " + u.item_name;
+      currentLoadedItem = u;
+    }
+
     const is_public = u.is_public == 1;
 
     const newRow = uploadsTable.insertRow();
@@ -2087,6 +2098,8 @@ async function loadItem(u) {
   }
 
   document.getElementById("currentLoadedName").innerHTML = u.item_name;
+  updateRouteButton.innerHTML = "Uppdatera " + u.item_name;
+  currentLoadedItem = u;
   newGeometry.forEach(element => {
     if (element.get("routeMode")) sessionStorage.routeMode = document.getElementById("routeModeSelector").value = element.get("routeMode");
     if (!!element.get("routeLineString")) {
@@ -2119,6 +2132,9 @@ function editItem(u) {
   if (!name) return;
 
   document.getElementById("currentLoadedName").innerHTML = name;
+  updateRouteButton.innerHTML = "Uppdatera " + name;
+  currentLoadedItem = u;
+
   const collection = new Collection();
   const fileFormat = new GeoJSON();
   collection.extend(poiLayer.getSource().getFeatures());
